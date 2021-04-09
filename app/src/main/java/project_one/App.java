@@ -3,12 +3,44 @@
  */
 package project_one;
 
+import org.apache.logging.log4j.*;
+
+
+
+
+
+
 public class App {
+
+    // Setup logger
+    public static Logger logger = LogManager.getLogger(App.class);
+
+
+    private static HttpServer _httpServer;
+
+
+
+    // logger helper method
+    public static void logEx(String classStr, String methodStr, Exception e) {
+        logger.error(String.format("%s in %s::%s, stack trace: ", e.getClass().getName(), classStr, methodStr), e);
+    } 
+
+
+
+
+
     public String getGreeting() {
         return "Hello World!";
     }
 
+
+
+    // MAIN entry point
     public static void main(String[] args) {
         System.out.println(new App().getGreeting());
+
+        _httpServer = new HttpServer(8080);
+        _httpServer.start();
+
     }
 }
