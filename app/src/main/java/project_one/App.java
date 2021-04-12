@@ -18,6 +18,8 @@ public class App {
 
     private static HttpServer _httpServer;
 
+    static int maxReqHeaders = 20;
+
 
 
     // logger helper method

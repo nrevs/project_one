@@ -1,6 +1,5 @@
 package project_one;
 
-
-class DataGenerator {
+public class HandlerA {
     
 }
