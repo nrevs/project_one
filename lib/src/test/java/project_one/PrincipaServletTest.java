@@ -6,7 +6,7 @@ package project_one;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
-class LibraryTest {
+class PrincipaServletTest {
     //@Test void testSomeLibraryMethod() {
     //    Library classUnderTest = new Library();
         //assertTrue(classUnderTest.someLibraryMethod(), "someLibraryMethod should return 'true'");
