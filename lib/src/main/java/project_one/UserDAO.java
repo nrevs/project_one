@@ -1,43 +1,63 @@
 package project_one;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+
 public class UserDAO {
     
+    private Logger logger = LogManager.getLogger(UserDAO.class);
+
     private Connection _connection;
 
     public UserDAO(Connection connection) {
         _connection = connection;
     }
 
-    public boolean validate(String username, String pw) {
-        System.out.println("1");
-        boolean res = false;
+    public User getUser(String username, String pw) {
 
         try {
-            System.out.println("2");
             PreparedStatement pStatement = _connection.prepareStatement(
-                "SELECT password = crypt(?,password) FROM users WHERE username = ?;"
+               // "SELECT password = crypt(?,password), id, username, email, admin, activesessions FROM users WHERE username = ?;"
+                "SELECT password = crypt(?,password), id, username, email, admin, activesessions  FROM users WHERE username = ?;"
             );
-            System.out.println("3");
+
             pStatement.setString(1, pw);
-            System.out.println("4");
             pStatement.setString(2, username);
-            System.out.println("5");
+            
             ResultSet rSet = pStatement.executeQuery();
-            System.out.println("6");
             while(rSet.next()){
-                System.out.println(String.valueOf(rSet.getBoolean(1)));
-                System.out.println(String.valueOf(rSet.getRow()));
+                if (rSet.getBoolean(1)) {
+                    String id = "id";
+                    String un = "username";
+                    String email = "email";
+                    String as = "activesessions";
+                    String admin = "admin";
+
+                    int asI = rSet.getInt(as);
+                    logger.info("number of active sessions: {}",asI);
+
+                    User usr = new User(rSet.getInt(id), rSet.getString(un), rSet.getString(email), rSet.getBoolean(admin), rSet.getInt(as));
+                    return usr;
+                } else {
+                    // User exists, but wrong password -> treating like user 
+                    // does not exist, return null 
+                    System.out.println("user exists but wrong password");
+                    return null;
+                }
             }
+            System.out.println("user does not exist");
+            return null;
+
         } catch(SQLException e) {
              e.printStackTrace();
+             return null;
         }
 
-        return res;
     }
 }

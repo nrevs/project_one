@@ -20,6 +20,8 @@ import javax.servlet.http.HttpServletResponse;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 
 
@@ -34,12 +36,19 @@ public class PrimaryServlet extends HttpServlet{
      *
      */
     private static final long serialVersionUID = -6668597909242177978L;
+
+    private String url = "jdbc:postgresql://database-project-one.cjsdfjt5gj6o.us-east-1.rds.amazonaws.com:5432/projectone";
+    private String uname = "nrevs";
+    private String pwDB = "KTw6bEi8dy9vxGdRjfrM";
+
     private DBManager dbManager;
+    final Logger logger = LogManager.getLogger(PrimaryServlet.class);
 
     public void init(ServletConfig config) throws ServletException {
         super.init(config);
 
         this.dbManager = new DBManager();
+
     }
 
     private String loginId = "#maincontent";
@@ -56,6 +65,8 @@ public class PrimaryServlet extends HttpServlet{
         "</div>";
     private String loginSrc = "login.js";
     private String loginCmpntId = "mainComponent";
+
+
     
     
 
@@ -65,21 +76,22 @@ public class PrimaryServlet extends HttpServlet{
                 IOException 
     {
         String code = req.getParameter("code");
-        System.out.println("doGet: "+code);
+        logger.info("doGet -> request code: {}",code);
 
-        Payload payload = new Payload(loginId, loginHtml, loginSrc);
-        Component loginCmp = new Component(loginCmpntId, payload);
-        
-        RespObj rObj = new RespObj();
-        rObj.addComponent(loginCmp);
-
-        
-        String rString = JSON.toJSONString(rObj);
-        System.out.println("Response String: "+rString);
 
 
         switch(code) {
             case "login":
+
+                Payload payload = new Payload(loginId, loginHtml, loginSrc);
+                Component loginCmp = new Component(loginCmpntId, payload);
+                
+                RespObj rObj = new RespObj();
+                rObj.addComponent(loginCmp);
+
+                String rString = JSON.toJSONString(rObj);
+                logger.info("doGet -> response string: {}", rString);
+
                 res.setContentType("application/json");
                 res.getWriter().println(rString);
                 break;
@@ -94,7 +106,7 @@ public class PrimaryServlet extends HttpServlet{
                 IOException
         {
             String code = req.getParameter("code");
-            System.out.println("doPost: "+code);
+            logger.info("doPost -> request code: {}",code);
 
             try {
                 JSONObject obj = JSONPartsHelper.getJSONParts(req.getParts());
@@ -103,28 +115,38 @@ public class PrimaryServlet extends HttpServlet{
                 
                 System.out.println("Username: "+username);
                 System.out.println("Password: "+password);
-                //this.dbManager = new DBManager();
-                //boolean r = this.dbManager.userDAO.validate(username, password);
-                //System.out.println(String.valueOf(r));
 
 
-                String url = "jdbc:postgresql://database-project-one.cjsdfjt5gj6o.us-east-1.rds.amazonaws.com:5432/projectone";
-                String uname = "nrevs";
-                String pwDB = "KTw6bEi8dy9vxGdRjfrM";
+
                 try {
                     Connection connection = DriverManager.getConnection(url, uname, pwDB);
-                    System.out.println("-1");
                     UserDAO userDAO = new UserDAO(connection);
-                    System.out.println("-2");
-                    boolean r = userDAO.validate(username, password);
-                    if (r) {
 
+                    User usr = userDAO.getUser(username, password);
+                    if (usr != null) {
+                        // User found and password checks out
+                        logger.info("usr found");
+                        if(usr.isAdmin()) {
+                            // user is admin
+                            logger.info("admin user");
+
+                            //TODO: forward on to AdminServlet
+
+                        } else {
+                            // user is NOT admin
+                            logger.info("NOT admin user");
+                            //TODO: forward on to UserServlet
+                        }
                     } else {
+                        // User password and/or username did not check out
+                        logger.info("password or username invalid");
+                        
+                        //TODO: invalid password or user response
+
 
                     }
 
                 } catch(SQLException sqlE) {
-                    System.out.println("-3");
                     sqlE.printStackTrace();
                 }
             } catch(IOException ioE) {
