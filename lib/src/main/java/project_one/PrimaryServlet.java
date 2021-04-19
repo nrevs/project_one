@@ -17,6 +17,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 
 
@@ -41,9 +42,8 @@ public class PrimaryServlet extends HttpServlet{
         this.dbManager = new DBManager();
     }
 
-
-
-    private String loginFormA = "" + 
+    private String loginId = "#maincontent";
+    private String loginHtml = "" + 
         "<div>" +
             "<form id=\"loginform\" method=\"post\">" +
                 "Username: <input type=\"text\" name=\"username\"/><br/><br/>" +
@@ -54,8 +54,8 @@ public class PrimaryServlet extends HttpServlet{
                 "<a href=\"createaccount\" onclick=\"createAccount()\">create account</a><br/>" +
             "</form>" +
         "</div>";
-
-    private String loginScript = "login.js";
+    private String loginSrc = "login.js";
+    private String loginCmpntId = "mainComponent";
     
     
 
@@ -64,22 +64,26 @@ public class PrimaryServlet extends HttpServlet{
         throws ServletException,
                 IOException 
     {
-        JSONObject obj = new JSONObject();
-        //String nl = System.getProperty("line.separator");
-        
-
         String code = req.getParameter("code");
         System.out.println("doGet: "+code);
+
+        Payload payload = new Payload(loginId, loginHtml, loginSrc);
+        Component loginCmp = new Component(loginCmpntId, payload);
+        
+        RespObj rObj = new RespObj();
+        rObj.addComponent(loginCmp);
+
+        
+        String rString = JSON.toJSONString(rObj);
+        System.out.println("Response String: "+rString);
+
+
         switch(code) {
             case "login":
-                obj.put("maincontent", loginFormA);
-                obj.put("script", loginScript);
                 res.setContentType("application/json");
-                res.getWriter().println(obj.toJSONString());
+                res.getWriter().println(rString);
                 break;
         }
-        
-
     }
 
 
@@ -91,7 +95,7 @@ public class PrimaryServlet extends HttpServlet{
         {
             String code = req.getParameter("code");
             System.out.println("doPost: "+code);
-            
+
             try {
                 JSONObject obj = JSONPartsHelper.getJSONParts(req.getParts());
                 String username = obj.getString("username");
@@ -113,7 +117,11 @@ public class PrimaryServlet extends HttpServlet{
                     UserDAO userDAO = new UserDAO(connection);
                     System.out.println("-2");
                     boolean r = userDAO.validate(username, password);
-                    System.out.println(String.valueOf(r));
+                    if (r) {
+
+                    } else {
+
+                    }
 
                 } catch(SQLException sqlE) {
                     System.out.println("-3");
