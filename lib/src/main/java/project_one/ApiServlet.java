@@ -12,29 +12,30 @@ import javax.servlet.http.HttpSession;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-@WebServlet("/user")
-public class UserServlet extends HttpServlet {
-    private static final long serialVersionUID = 2L;
+@WebServlet("/api")
+public class ApiServlet extends HttpServlet {
+    private static final long serialVersionUID = 3L;
     private ResponseBuilder rb = ResponseBuilder.getInstance();
 
-    final Logger logger = LogManager.getLogger(UserServlet.class);
+    final Logger logger = LogManager.getLogger(ApiServlet.class);
 
-    private String userId = "#maincontent";
-    private String userHtml = "" +
+    private String apiId = "#maincontent";
+    private String apiHtml = "" +
         "<div>" +
-        "USER CONTENT" +
+        "API CONTENT" +
         "</div>";
-    private String userSrc = "user.js";
-    private String userCmpntId = "maincomponent";
+    private String apiSrc = "api.js";
+    private String apiCmpntId = "mainComponent";
 
-    protected void service(HttpServletRequest req, HttpServletResponse res)
+    protected void service(HttpServletRequest req, HttpServletResponse res) 
         throws ServletException, IOException
     {
         HttpSession session = req.getSession();
 
-        String rString = rb.buildResponseString(userCmpntId, userId, userHtml, userSrc);
+        String rString = rb.buildResponseString(apiCmpntId, apiId, apiHtml, apiSrc);
 
         res.setContentType("application/json");
         res.getWriter().println(rString);
     }
+
 }

@@ -21,7 +21,7 @@ public class AdminServlet extends HttpServlet {
      *
      */
     private static final long serialVersionUID = -6421597909242177978L;
-
+    private ResponseBuilder rb = ResponseBuilder.getInstance();
 
     
     final Logger logger = LogManager.getLogger(AdminServlet.class);
@@ -42,17 +42,10 @@ public class AdminServlet extends HttpServlet {
         System.out.println("called");
         HttpSession session = req.getSession();
         
-        Payload payload = new Payload(adminId, adminHtml, adminSrc);
-        Component adminCmp = new Component(adminCompntId, payload);
-
-        RespObj rObj = new RespObj();
-        rObj.addComponent(adminCmp);
-        
-
-        String rString = JSON.toJSONString(rObj);
+        String rString = rb.buildResponseString(adminCompntId, adminId, adminHtml, adminSrc);
         logger.info("doPost -> response string: {}",rString);
     
-        res.setContentType("text/html");
+        res.setContentType("application/json");
         res.getWriter().println(rString);
     }
     

@@ -45,11 +45,9 @@ public class PrimaryServlet extends HttpServlet{
     private DBManager dbManager = new DBManager();
     final Logger logger = LogManager.getLogger(PrimaryServlet.class);
 
+    private ResponseBuilder rb = ResponseBuilder.getInstance();
 
-    public void init(ServletConfig config) throws ServletException {
-        super.init(config);
 
-    }
 
     private String loginId = "#maincontent";
     private String loginHtml = "" + 
@@ -58,9 +56,9 @@ public class PrimaryServlet extends HttpServlet{
                 "Username: <input type=\"text\" name=\"username\"/><br/><br/>" +
                 "Password: <input type=\"password\" name=\"usrpass\"/><br/><br/>" +
                 "<input type=\"submit\" value=\"login\"/><br/>" +
-                "<a href=\"forgotuname\" onclick=\"forgotUsername()\">forgot username</a><br/>" +
-                "<a href=\"forgotpass\" onclick=\"forgotPassword()\">forgot password</a><br/>" +
-                "<a href=\"createaccount\" onclick=\"createAccount()\">create account</a><br/>" +
+                "<a id=\"forgotuname\" href=\"#\" onclick=\"forgotUsername(event)\">forgot username</a><br/>" +
+                "<a href=\"forgotpass\" onclick=\"forgotPassword(event)\">forgot password</a><br/>" +
+                "<a href=\"createaccount\" onclick=\"create(event)\">create account</a><br/>" +
             "</form>" +
         "</div>";
     private String loginSrc = "login.js";
@@ -68,30 +66,42 @@ public class PrimaryServlet extends HttpServlet{
 
 
     private String forgotUnHtml = "" +
-        "" +
-        "" +
-        "" +
-        "" +
-        "" +
-        "";
+        "<div>" +
+            "<p>Please enter your email and if it is registered with an account, we will email the username.</p>" +
+            "<form id=\"unForm\" method=\"get\">" +
+                "e-mail: <input type=\"email\"/><br/><br/>" +
+                "<input type=\"submit\" value=\"submit\"/><br/>" +
+                "<a href=\"login\" onclick=\"startLogin(event)\">Login</a><br/>" +
+                "<a href=\"forgotpass\" onclick=\"forgotPassword(event)\">forgot password</a><br/>" +
+                "<a href=\"createaccount\" onclick=\"create(event)\">create account</a><br/>" +
+            "</form>" +
+        "</div>";
     private String forgotUnHtmlSrc = "forgotUn.js";
 
     private String forgotPwHtml = "" +
-        "" +
-        "" +
-        "" +
-        "" +
-        "" +
-        "";
+        "<div>" +
+            "<p>Please enter your email and if it is registered with an account, we will email instructions to reset password.</p>" +
+            "<form id=\"pwForm\" method=\"get\">" +
+                "e-mail: <input type=\"email\"/><br/><br/>" +
+                "<input type=\"submit\" value=\"submit\"/><br/>" +
+                "<a href=\"login\" onclick=\"startLogin(event)\">Login</a><br/>" +
+                "<a href=\"forgotuname\" onclick=\"forgotUsername(event)\">forgot username</a><br/>" +
+                "<a href=\"createaccount\" onclick=\"create(event)\">create account</a><br/>" +
+            "</form>" +
+        "</div>";
     private String forgotPwHtmlSrc = "forgotPw.js";
 
     private String createHtml = "" +
-        "" +
-        "" +
-        "" +
-        "" +
-        "" +
-        "";
+        "<div>" +
+            "<form id=\"create\" method=\"post\">" +
+                "Username: <input type=\"text\"/><br/><br/>" +
+                "Email: <input type=\"email\"/><br/><br/>" +
+                "Password: <input type=\"password\"/><br/><br/>" +
+                "<a href=\"login\" onclick=\"startlogin(event)\">Login</a><br/>" +
+                "<a href=\"forgotuname\" onclick=\"forgotUsername(event)\">forgot username</a><br/>" +
+                "<a href=\"forgotpass\" onclick=\"forgotPassword(event)\">forgot password</a><br/>" +
+            "</form>" +
+        "</div>";
     private String createSrc = "create.js";
 
     @Override
@@ -108,6 +118,8 @@ public class PrimaryServlet extends HttpServlet{
             String isadmin = "isadmin";
             if (session.getAttribute(isadmin)!=null) {
                 req.getRequestDispatcher("/admin").forward(req, res);
+            } else {
+                req.getRequestDispatcher("/user").forward(req,res);
             }
         }
 
@@ -115,15 +127,20 @@ public class PrimaryServlet extends HttpServlet{
 
         switch(code) {
             case "login":
-                rString = setupResponseString(loginCmpntId, loginId, loginHtml, loginSrc);
+                rString = rb.buildResponseString(loginCmpntId, loginId, loginHtml, loginSrc);
                 break;
-            case "forgotUName":
-                rString = setupResponseString(loginCmpntId, loginId, forgotUnHtml, forgotUnHtmlSrc);
+            case "emailUsername":
+                rString = rb.buildResponseString(loginCmpntId, loginId, forgotUnHtml, forgotUnHtmlSrc);
+                // TODO: email username
                 break;
-            case "forgotPWord":
-                rString = setupResponseString(loginCmpntId, loginId, forgotPwHtml, forgotPwHtmlSrc);
+            case "emailPasswordReset":
+                rString = rb.buildResponseString(loginCmpntId, loginId, forgotPwHtml, forgotPwHtmlSrc);
+                // TODO: create temporary password
                 break;
-        }
+            case "create":
+                rString = rb.buildResponseString(loginCmpntId, loginId, createHtml, createSrc);
+                break;
+            }
 
         logger.info("doGet -> response string: {}", rString);
 
@@ -145,76 +162,72 @@ public class PrimaryServlet extends HttpServlet{
         String code = req.getParameter("code");
         logger.info("doPost -> request code: {}",code);
 
-        try {
-            JSONObject obj = JSONPartsHelper.getJSONParts(req.getParts());
-            String username = obj.getString("username");
-            String password = obj.getString("usrpass");
-            
-            System.out.println("Username: "+username);
-            System.out.println("Password: "+password);
+        switch(code) {
+            case "login":
 
-
-
-            try {
-                Connection connection = DriverManager.getConnection(url, uname, pwDB);
-                UserDAO userDAO = new UserDAO(connection);
-
-                User usr = userDAO.getUser(username, password);
-                if (usr != null) {
-                    // User found and password checks out
-                    logger.info("usr found");
-
-                    session.setAttribute("username", usr.getUsername());
-                    session.setAttribute("email", usr.getEmail());
-                    session.setAttribute("id", usr.getId());
-
-                    if(usr.isAdmin()) {
-                        // user is admin
-                        logger.info("admin user");
-
-                        session.setAttribute("isadmin",true);
-
-                        req.getRequestDispatcher("/admin").forward(req, res);
-
-
-                    } else {
-                        // user is NOT admin
-                        logger.info("NOT admin user");
-                        
-                        req.getRequestDispatcher("/user").forward(req, res);
-
-                    }
-                } else {
-                    // User password and/or username did not check out
-                    logger.info("password or username invalid");
+                try {
+                    JSONObject obj = JSONPartsHelper.getJSONParts(req.getParts());
+                    String username = obj.getString("username");
+                    String password = obj.getString("usrpass");
                     
-
-                    Object aObj = session.getAttribute("loginattempts");
-                    int a = 0;
-                    if (aObj != null) {a  = (int)aObj;}
-                    session.setAttribute("loginattempts",++a);
-                    //TODO: invalid password or user response
-
+                    try {
+                        Connection connection = DriverManager.getConnection(url, uname, pwDB);
+                        UserDAO userDAO = new UserDAO(connection);
+        
+                        User usr = userDAO.getUser(username, password);
+                        if (usr != null) {
+                            // User found and password checks out
+                            logger.info("usr found");
+        
+                            session.setAttribute("username", usr.getUsername());
+                            session.setAttribute("email", usr.getEmail());
+                            session.setAttribute("id", usr.getId());
+        
+                            if(usr.isAdmin()) {
+                                // user is admin
+                                logger.info("admin user");
+        
+                                session.setAttribute("isadmin",true);
+        
+                                req.getRequestDispatcher("/admin").forward(req, res);
+        
+        
+                            } else {
+                                // user is NOT admin
+                                logger.info("NOT admin user");
+                                
+                                req.getRequestDispatcher("/user").forward(req, res);
+        
+                            }
+                        } else {
+                            // User password and/or username did not check out
+                            logger.info("password or username invalid");
+                            
+        
+                            Object aObj = session.getAttribute("loginattempts");
+                            int a = 0;
+                            if (aObj != null) {a  = (int)aObj;}
+                            session.setAttribute("loginattempts",++a);
+                            //TODO: invalid password or user response
+        
+                        }
+        
+                    } catch(SQLException sqlE) {
+                        sqlE.printStackTrace();
+                    }
+                } catch(IOException ioE) {
+                    ioE.printStackTrace();
                 }
+                break;
+            
 
-            } catch(SQLException sqlE) {
-                sqlE.printStackTrace();
+            case "create":
+                break;
+
             }
-        } catch(IOException ioE) {
-            ioE.printStackTrace();
-        }
+        
 
         
-    }
-    
-    private String setupResponseString(String componentId, String payloadId, String payloadHtml, String payloadSrc) {
-        Payload payload = new Payload(payloadId, payloadHtml, payloadSrc);
-        Component component = new Component(componentId, payload);
-        
-        RespObj rObj = new RespObj();
-        rObj.addComponent(component);
-
-        return JSON.toJSONString(rObj);
     }
     
 }
