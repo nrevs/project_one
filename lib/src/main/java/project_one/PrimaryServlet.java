@@ -16,6 +16,7 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
@@ -26,7 +27,7 @@ import org.apache.logging.log4j.Logger;
 
 
 
-@WebServlet("/api")
+@WebServlet("/login")
 @MultipartConfig(location="/tmp",
     fileSizeThreshold = 1024,
     maxFileSize = 1024,
@@ -41,13 +42,12 @@ public class PrimaryServlet extends HttpServlet{
     private String uname = "nrevs";
     private String pwDB = "KTw6bEi8dy9vxGdRjfrM";
 
-    private DBManager dbManager;
+    private DBManager dbManager = new DBManager();
     final Logger logger = LogManager.getLogger(PrimaryServlet.class);
+
 
     public void init(ServletConfig config) throws ServletException {
         super.init(config);
-
-        this.dbManager = new DBManager();
 
     }
 
@@ -67,8 +67,32 @@ public class PrimaryServlet extends HttpServlet{
     private String loginCmpntId = "mainComponent";
 
 
-    
-    
+    private String forgotUnHtml = "" +
+        "" +
+        "" +
+        "" +
+        "" +
+        "" +
+        "";
+    private String forgotUnHtmlSrc = "forgotUn.js";
+
+    private String forgotPwHtml = "" +
+        "" +
+        "" +
+        "" +
+        "" +
+        "" +
+        "";
+    private String forgotPwHtmlSrc = "forgotPw.js";
+
+    private String createHtml = "" +
+        "" +
+        "" +
+        "" +
+        "" +
+        "" +
+        "";
+    private String createSrc = "create.js";
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse res) 
@@ -78,23 +102,34 @@ public class PrimaryServlet extends HttpServlet{
         String code = req.getParameter("code");
         logger.info("doGet -> request code: {}",code);
 
+        HttpSession session = req.getSession();
+        String uname = "username";
+        if (session.getAttribute(uname)!=null) {
+            String isadmin = "isadmin";
+            if (session.getAttribute(isadmin)!=null) {
+                req.getRequestDispatcher("/admin").forward(req, res);
+            }
+        }
 
+        String rString = "";
 
         switch(code) {
             case "login":
-
-                Payload payload = new Payload(loginId, loginHtml, loginSrc);
-                Component loginCmp = new Component(loginCmpntId, payload);
-                
-                RespObj rObj = new RespObj();
-                rObj.addComponent(loginCmp);
-
-                String rString = JSON.toJSONString(rObj);
-                logger.info("doGet -> response string: {}", rString);
-
-                res.setContentType("application/json");
-                res.getWriter().println(rString);
+                rString = setupResponseString(loginCmpntId, loginId, loginHtml, loginSrc);
                 break;
+            case "forgotUName":
+                rString = setupResponseString(loginCmpntId, loginId, forgotUnHtml, forgotUnHtmlSrc);
+                break;
+            case "forgotPWord":
+                rString = setupResponseString(loginCmpntId, loginId, forgotPwHtml, forgotPwHtmlSrc);
+                break;
+        }
+
+        logger.info("doGet -> response string: {}", rString);
+
+        if (rString != "") {
+            res.setContentType("application/json");
+            res.getWriter().println(rString);
         }
     }
 
@@ -104,59 +139,82 @@ public class PrimaryServlet extends HttpServlet{
     protected void doPost(HttpServletRequest req, HttpServletResponse res) 
         throws ServletException,
                 IOException
-        {
-            String code = req.getParameter("code");
-            logger.info("doPost -> request code: {}",code);
+    {
+        HttpSession session = req.getSession();
+
+        String code = req.getParameter("code");
+        logger.info("doPost -> request code: {}",code);
+
+        try {
+            JSONObject obj = JSONPartsHelper.getJSONParts(req.getParts());
+            String username = obj.getString("username");
+            String password = obj.getString("usrpass");
+            
+            System.out.println("Username: "+username);
+            System.out.println("Password: "+password);
+
+
 
             try {
-                JSONObject obj = JSONPartsHelper.getJSONParts(req.getParts());
-                String username = obj.getString("username");
-                String password = obj.getString("usrpass");
-                
-                System.out.println("Username: "+username);
-                System.out.println("Password: "+password);
+                Connection connection = DriverManager.getConnection(url, uname, pwDB);
+                UserDAO userDAO = new UserDAO(connection);
+
+                User usr = userDAO.getUser(username, password);
+                if (usr != null) {
+                    // User found and password checks out
+                    logger.info("usr found");
+
+                    session.setAttribute("username", usr.getUsername());
+                    session.setAttribute("email", usr.getEmail());
+                    session.setAttribute("id", usr.getId());
+
+                    if(usr.isAdmin()) {
+                        // user is admin
+                        logger.info("admin user");
+
+                        session.setAttribute("isadmin",true);
+
+                        req.getRequestDispatcher("/admin").forward(req, res);
 
 
-
-                try {
-                    Connection connection = DriverManager.getConnection(url, uname, pwDB);
-                    UserDAO userDAO = new UserDAO(connection);
-
-                    User usr = userDAO.getUser(username, password);
-                    if (usr != null) {
-                        // User found and password checks out
-                        logger.info("usr found");
-                        if(usr.isAdmin()) {
-                            // user is admin
-                            logger.info("admin user");
-
-                            //TODO: forward on to AdminServlet
-
-                        } else {
-                            // user is NOT admin
-                            logger.info("NOT admin user");
-                            //TODO: forward on to UserServlet
-                        }
                     } else {
-                        // User password and/or username did not check out
-                        logger.info("password or username invalid");
+                        // user is NOT admin
+                        logger.info("NOT admin user");
                         
-                        //TODO: invalid password or user response
-
+                        req.getRequestDispatcher("/user").forward(req, res);
 
                     }
+                } else {
+                    // User password and/or username did not check out
+                    logger.info("password or username invalid");
+                    
 
-                } catch(SQLException sqlE) {
-                    sqlE.printStackTrace();
+                    Object aObj = session.getAttribute("loginattempts");
+                    int a = 0;
+                    if (aObj != null) {a  = (int)aObj;}
+                    session.setAttribute("loginattempts",++a);
+                    //TODO: invalid password or user response
+
                 }
-            } catch(IOException ioE) {
-                ioE.printStackTrace();
+
+            } catch(SQLException sqlE) {
+                sqlE.printStackTrace();
             }
-
-            
+        } catch(IOException ioE) {
+            ioE.printStackTrace();
         }
-    
 
+        
+    }
     
+    private String setupResponseString(String componentId, String payloadId, String payloadHtml, String payloadSrc) {
+        Payload payload = new Payload(payloadId, payloadHtml, payloadSrc);
+        Component component = new Component(componentId, payload);
+        
+        RespObj rObj = new RespObj();
+        rObj.addComponent(component);
 
+        return JSON.toJSONString(rObj);
+    }
+    
 }
