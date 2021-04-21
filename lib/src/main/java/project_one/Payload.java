@@ -5,13 +5,22 @@ public class Payload {
     private String id;
     private String html;
     private String src;
+    private String data;
 
 
-    public Payload(String id, String html, String src) {
+    public Payload(String id, String html, String src, String data) {
+        init(id, html, src, data);
+    }
+
+    private Payload init(String id, String html, String src, String data) {
         setId(id);
         setHtml(html);
         setSrc(src);
+        setData(data);
+        return this;
     }
+
+    
 
     public String getId() {
         return this.id;
@@ -25,6 +34,10 @@ public class Payload {
         return this.src;
     }
 
+    public String getData() {
+        return this.data;
+    }
+
     public void setId(String id) {
         this.id = id;
     }
@@ -35,5 +48,9 @@ public class Payload {
 
     public void setSrc(String src) {
         this.src = src;
+    }
+
+    public void setData(String data) {
+        this.data = data;
     }
 }

@@ -9,7 +9,6 @@ import java.sql.DriverManager;
 import java.sql.Connection;
 import java.sql.SQLException;
 
-import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.MultipartConfig;
 import javax.servlet.annotation.WebServlet;
@@ -18,7 +17,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 
 import org.apache.logging.log4j.LogManager;
@@ -37,18 +35,21 @@ public class PrimaryServlet extends HttpServlet{
      *
      */
     private static final long serialVersionUID = -6668597909242177978L;
-
+    
+    final Logger logger = LogManager.getLogger(PrimaryServlet.class);
+    
     private String url = "jdbc:postgresql://database-project-one.cjsdfjt5gj6o.us-east-1.rds.amazonaws.com:5432/projectone";
     private String uname = "nrevs";
     private String pwDB = "KTw6bEi8dy9vxGdRjfrM";
 
     private DBManager dbManager = new DBManager();
-    final Logger logger = LogManager.getLogger(PrimaryServlet.class);
 
-    private ResponseBuilder rb = ResponseBuilder.getInstance();
-
+private ResponseBuilder rb = ResponseBuilder.getInstance();
 
 
+    /*
+    *   LOGIN CONTENT
+    */
     private String loginId = "#maincontent";
     private String loginHtml = "" + 
         "<div>" +
@@ -64,7 +65,9 @@ public class PrimaryServlet extends HttpServlet{
     private String loginSrc = "login.js";
     private String loginCmpntId = "mainComponent";
 
-
+    /*
+    *   FORGOT USERNAME CONTENT
+    */
     private String forgotUnHtml = "" +
         "<div>" +
             "<p>Please enter your email and if it is registered with an account, we will email the username.</p>" +
@@ -78,6 +81,9 @@ public class PrimaryServlet extends HttpServlet{
         "</div>";
     private String forgotUnHtmlSrc = "forgotUn.js";
 
+    /*
+    *   FORGOT PASSWORD CONTENT
+    */
     private String forgotPwHtml = "" +
         "<div>" +
             "<p>Please enter your email and if it is registered with an account, we will email instructions to reset password.</p>" +
@@ -91,12 +97,16 @@ public class PrimaryServlet extends HttpServlet{
         "</div>";
     private String forgotPwHtmlSrc = "forgotPw.js";
 
+    /*
+    *   CREATE ACCOUNT CONTENT
+    */    
     private String createHtml = "" +
         "<div>" +
             "<form id=\"create\" method=\"post\">" +
                 "Username: <input type=\"text\"/><br/><br/>" +
                 "Email: <input type=\"email\"/><br/><br/>" +
                 "Password: <input type=\"password\"/><br/><br/>" +
+                "<input type=\"submit\" value=\"submit\"/><br/>" +
                 "<a href=\"login\" onclick=\"startlogin(event)\">Login</a><br/>" +
                 "<a href=\"forgotuname\" onclick=\"forgotUsername(event)\">forgot username</a><br/>" +
                 "<a href=\"forgotpass\" onclick=\"forgotPassword(event)\">forgot password</a><br/>" +
@@ -104,6 +114,27 @@ public class PrimaryServlet extends HttpServlet{
         "</div>";
     private String createSrc = "create.js";
 
+
+    /*
+    *   RESET PASSWORD CONTENT
+    */
+    private String resetHtml = "" +
+        "<div>" +
+            "<form id=\"reset\" method=\"post\">" +
+                "New Password: <input type=\"password\"/><br/><br/>" +
+                "<input type=\"submit\" value=\"submit\"/><br/>" +
+                "<a href=\"login\" onclick=\"startlogin(event)\">Login</a><br/>" +
+                "<a href=\"forgotuname\" onclick=\"forgotUsername(event)\">forgot username</a><br/>" +
+                "<a href=\"forgotpass\" onclick=\"forgotPassword(event)\">forgot password</a><br/>" +
+            "</form>" +
+        "</div>";
+    private String resetSrc = "reset.js";
+
+
+
+
+
+    
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse res) 
         throws ServletException,
@@ -131,11 +162,9 @@ public class PrimaryServlet extends HttpServlet{
                 break;
             case "emailUsername":
                 rString = rb.buildResponseString(loginCmpntId, loginId, forgotUnHtml, forgotUnHtmlSrc);
-                // TODO: email username
                 break;
             case "emailPasswordReset":
                 rString = rb.buildResponseString(loginCmpntId, loginId, forgotPwHtml, forgotPwHtmlSrc);
-                // TODO: create temporary password
                 break;
             case "create":
                 rString = rb.buildResponseString(loginCmpntId, loginId, createHtml, createSrc);
@@ -162,6 +191,8 @@ public class PrimaryServlet extends HttpServlet{
         String code = req.getParameter("code");
         logger.info("doPost -> request code: {}",code);
 
+        String rString;
+
         switch(code) {
             case "login":
 
@@ -182,6 +213,14 @@ public class PrimaryServlet extends HttpServlet{
                             session.setAttribute("username", usr.getUsername());
                             session.setAttribute("email", usr.getEmail());
                             session.setAttribute("id", usr.getId());
+
+                            if (usr.getTmpExpire()!=null) {
+                                // send to reset password
+                                rString = rb.buildResponseString(loginCmpntId, loginId, resetHtml, resetSrc);
+                                res.setContentType("application/json");
+                                res.getWriter().println(rString);
+                                return;
+                            }
         
                             if(usr.isAdmin()) {
                                 // user is admin
@@ -219,9 +258,21 @@ public class PrimaryServlet extends HttpServlet{
                     ioE.printStackTrace();
                 }
                 break;
+
+            case "emailUsername":
+                // TODO: email username
+                break;
+
+            case "emailPasswordReset":
+                // TODO: create temporary password
+                break;
             
 
             case "create":
+                break;
+
+
+            case "reset":
                 break;
 
             }

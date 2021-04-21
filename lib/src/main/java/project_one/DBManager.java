@@ -15,9 +15,7 @@ public class DBManager {
         String pwDB = "KTw6bEi8dy9vxGdRjfrM";
         try {
             connection = DriverManager.getConnection(url, uname, pwDB);
-            System.out.println("-1");
             userDAO = new UserDAO(connection);
-            System.out.println("-2");
 
         } catch(SQLException sqlE) {
             
