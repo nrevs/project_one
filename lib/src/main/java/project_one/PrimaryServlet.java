@@ -190,7 +190,7 @@ private ResponseBuilder rb = ResponseBuilder.getInstance();
 
         String code = req.getParameter("code");
         logger.info("doPost -> request code: {}",code);
-
+        System.out.println("doPost -> request code: "+code);
         String rString;
 
         switch(code) {
@@ -204,17 +204,19 @@ private ResponseBuilder rb = ResponseBuilder.getInstance();
                     try {
                         Connection connection = DriverManager.getConnection(url, uname, pwDB);
                         UserDAO userDAO = new UserDAO(connection);
-        
+                        
                         User usr = userDAO.getUser(username, password);
                         if (usr != null) {
                             // User found and password checks out
                             logger.info("usr found");
+                            System.out.println("usr found");
         
                             session.setAttribute("username", usr.getUsername());
                             session.setAttribute("email", usr.getEmail());
                             session.setAttribute("id", usr.getId());
 
                             if (usr.getTmpExpire()!=null) {
+                                System.out.println("has tmpexpire");
                                 // send to reset password
                                 rString = rb.buildResponseString(loginCmpntId, loginId, resetHtml, resetSrc);
                                 res.setContentType("application/json");
@@ -234,6 +236,7 @@ private ResponseBuilder rb = ResponseBuilder.getInstance();
                             } else {
                                 // user is NOT admin
                                 logger.info("NOT admin user");
+                                System.out.println("not admin user, sending to user servlet");
                                 
                                 req.getRequestDispatcher("/user").forward(req, res);
         
@@ -260,19 +263,23 @@ private ResponseBuilder rb = ResponseBuilder.getInstance();
                 break;
 
             case "emailUsername":
+                System.out.println("doPost -> emailUsername");
                 // TODO: email username
                 break;
 
             case "emailPasswordReset":
+                System.out.println("doPost -> emailPasswordReset");
                 // TODO: create temporary password
                 break;
             
 
             case "create":
+                System.out.println("doPost -> create");
                 break;
 
 
             case "reset":
+                System.out.println("doPost -> reset");
                 break;
 
             }

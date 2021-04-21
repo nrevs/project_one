@@ -41,13 +41,16 @@ public class UserDAO {
             pStatement.setString(3, username);
             
             ResultSet rSet = pStatement.executeQuery();
-            pStatement.close();
+            System.out.println("getUser");
+            
             while(rSet.next()){
                 if (rSet.getBoolean(1)) {
+                    System.out.println("main password matched");
                     // Matched perm password
                     User usr = new User(rSet.getInt(id), rSet.getString(un), rSet.getString(email), rSet.getBoolean(admin), rSet.getInt(as), null);
                     return usr;
                 } else if (rSet.getBoolean(2)) {
+                    System.out.println("temp password matched");
                     // Matched temporary password...
                     User usr = new User(rSet.getInt(id), rSet.getString(un), rSet.getString(email), rSet.getBoolean(admin), rSet.getInt(as), rSet.getTimestamp(tmpexpire));
 
@@ -57,7 +60,7 @@ public class UserDAO {
                     );
                     pStatement.setInt(1, usr.getId());
                     pStatement.executeUpdate();
-                    pStatement.close();
+                    
 
                     if ( usr.getTmpExpire().before( new Timestamp( System.currentTimeMillis() ) ) ) {
                         // ...but past expiration -> return null

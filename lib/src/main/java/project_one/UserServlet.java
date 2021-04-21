@@ -25,13 +25,13 @@ public class UserServlet extends HttpServlet {
         "USER CONTENT" +
         "</div>";
     private String userSrc = "user.js";
-    private String userCmpntId = "maincomponent";
+    private String userCmpntId = "mainComponent";
 
     protected void service(HttpServletRequest req, HttpServletResponse res)
         throws ServletException, IOException
     {
         HttpSession session = req.getSession();
-
+        System.out.println("user servlet service called");
         String rString = rb.buildResponseString(userCmpntId, userId, userHtml, userSrc);
 
         res.setContentType("application/json");
