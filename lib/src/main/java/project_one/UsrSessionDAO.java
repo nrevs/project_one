@@ -5,6 +5,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,30 +28,50 @@ public class UsrSessionDAO {
         _connection = connection;
     }
 
-    public List<UsrSession> createUsrSession(int userId, String sessionId, Timestamp timestamp) {
-        List<UsrSession> usrSessions = new ArrayList<UsrSession>();
+    
+    public int createUsrSession(int userId) {
+
+        int rows = 0;
+        Timestamp tstamp = Timestamp.from(Instant.now().plus(24, ChronoUnit.HOURS));
+
         try {
             PreparedStatement pStatement = _connection.prepareStatement(
-                "INSERT INTO activesessions (sessionid, userid, expir, reqcount) VALUES (?, ?, ?, 0);"
+                "INSERT INTO activesessions (userid, expir) VALUES (?, ?);"
             );
-            pStatement.setString(1, sessionId);
-            pStatement.setInt(2, userId);
-            pStatement.setTimestamp(3, timestamp);
-            int rows = pStatement.executeUpdate();
-
-            if (rows>0) {
-                usrSessions = getUsrSessionsByUserId(userId);
-                return usrSessions;
-            }
-
+            pStatement.setInt(1, userId);
+            pStatement.setTimestamp(2, tstamp);
+            rows = pStatement.executeUpdate();
 
         } catch(SQLException sqlE) {
             sqlE.printStackTrace();
         }
-        return usrSessions;
+        return rows;
     }
 
+
+    public int clearStaleSessions() {
+        int rows = 0;
+        try {
+
+            PreparedStatement pStatement = _connection.prepareStatement(
+                "DELETE * from activesessions WHERE expir < ?;"
+            );
+            Timestamp rightNow = new Timestamp( System.currentTimeMillis() );
+            pStatement.setTimestamp(1, rightNow);
+            rows = pStatement.executeUpdate();
+            
+        } catch(SQLException sqlE) {
+            sqlE.printStackTrace();
+        }
+        return rows;
+    }
+
+
     public List<UsrSession> getUsrSessionsByUserId(int userId) {
+
+        createUsrSession(userId);
+        clearStaleSessions();
+
         List<UsrSession> usrSessions = new ArrayList<UsrSession>();
         try {
             PreparedStatement pStatement = _connection.prepareStatement(
@@ -69,5 +91,6 @@ public class UsrSessionDAO {
         }
         return usrSessions;
     }
+
 
 }

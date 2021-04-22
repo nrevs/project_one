@@ -175,6 +175,10 @@ private ResponseBuilder rb = ResponseBuilder.getInstance();
             case "create":
                 rString = rb.buildResponseString(loginCmpntId, loginId, createHtml, createSrc);
                 break;
+            case "logout":
+                session.invalidate();
+                rString = rb.buildResponseString(loginCmpntId, loginId, loginHtml, loginSrc);
+                break;
             }
 
         logger.info("doGet -> response string: {}", rString);
@@ -234,7 +238,7 @@ private ResponseBuilder rb = ResponseBuilder.getInstance();
                         if(usr.isAdmin()) {
                             // user is admin
                             logger.info("admin user");
-
+                            System.out.println("admin user -> /admin");
                             session.setAttribute("isadmin",true);
 
                             req.getRequestDispatcher("/admin").forward(req, res);

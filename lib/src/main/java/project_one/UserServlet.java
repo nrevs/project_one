@@ -4,6 +4,9 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 
 import javax.servlet.ServletException;
@@ -57,14 +60,20 @@ public class UserServlet extends HttpServlet {
         throws ServletException, IOException
     {
         HttpSession session = req.getSession();
+
+        String code = req.getParameter("code");
+        String username = (String)session.getAttribute("username");
+
         System.out.println("user servlet service called");
-        userHtml = userHtml.replaceAll("\\{USERNAME\\}",(String)session.getAttribute("username"));
+        userHtml = userHtml.replaceAll("\\{USERNAME\\}", username);
 
         try {
             Connection connection = DriverManager.getConnection(url, uname, pwDB);
             UsrSessionDAO usrSeshDAO = new UsrSessionDAO(connection);
-            ArrayList<UsrSession> usrSessions = (ArrayList<UsrSession>)usrSeshDAO.getUsrSessionsByUserId((int)session.getAttribute("id"));
-            
+            ArrayList<UsrSession> usrSessions;
+
+            usrSessions = (ArrayList<UsrSession>)usrSeshDAO.getUsrSessionsByUserId((int)session.getAttribute("id"));
+
             JSONArray jsonArray = new JSONArray();
             jsonArray.addAll(usrSessions);
             
