@@ -1,7 +1,7 @@
 package project_one;
 
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Properties;
 
 public class ConfigReader {
@@ -18,18 +18,18 @@ public class ConfigReader {
         if (this.props != null) {
             return props;
         } else {
-            FileInputStream fis;
+            InputStream is;
             Properties props = new Properties();
             
-            fis = (FileInputStream)ConfigReader.class.getClassLoader().getResourceAsStream(".myconfig");
+            is = ConfigReader.class.getClassLoader().getResourceAsStream(".myconfig");
             try {
-                props.load(fis);
+                props.load(is);
             } catch (IOException e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
             } finally {
                 try {
-                    fis.close();
+                    is.close();
                 } catch (IOException e) {
                     // TODO Auto-generated catch block
                     e.printStackTrace();

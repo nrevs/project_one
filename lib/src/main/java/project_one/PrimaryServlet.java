@@ -11,7 +11,6 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Calendar;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.MultipartConfig;
@@ -61,7 +60,7 @@ private ResponseBuilder rb = ResponseBuilder.getInstance();
         "<div>" +
             "<form id=\"loginform\" method=\"post\">" +
                 "Username: <input type=\"text\" name=\"username\"/><br/><br/>" +
-                "Password: <input type=\"password\" name=\"usrpass\"/><br/><br/>" +
+                "Password: <input type=\"password\" name=\"password\"/><br/><br/>" +
                 "<input type=\"submit\" value=\"login\"/><br/>" +
                 "<a id=\"forgotuname\" href=\"#\" onclick=\"forgotUsername(event)\">forgot username</a><br/>" +
                 "<a href=\"forgotpass\" onclick=\"forgotPassword(event)\">forgot password</a><br/>" +
@@ -78,9 +77,9 @@ private ResponseBuilder rb = ResponseBuilder.getInstance();
         "<div>" +
             "<p>Please enter your email and if it is registered with an account, we will email the username.</p>" +
             "<form id=\"unForm\" method=\"get\">" +
-                "e-mail: <input type=\"email\"/><br/><br/>" +
+                "e-mail: <input type=\"email\" name=\"email\"/><br/><br/>" +
                 "<input type=\"submit\" value=\"submit\"/><br/>" +
-                "<a href=\"login\" onclick=\"startLogin(event)\">Login</a><br/>" +
+                "<a href=\"login\" onclick=\"startLogin(event)\">login</a><br/>" +
                 "<a href=\"forgotpass\" onclick=\"forgotPassword(event)\">forgot password</a><br/>" +
                 "<a href=\"createaccount\" onclick=\"create(event)\">create account</a><br/>" +
             "</form>" +
@@ -94,9 +93,9 @@ private ResponseBuilder rb = ResponseBuilder.getInstance();
         "<div>" +
             "<p>Please enter your email and if it is registered with an account, we will email instructions to reset password.</p>" +
             "<form id=\"pwForm\" method=\"get\">" +
-                "e-mail: <input type=\"email\"/><br/><br/>" +
+                "e-mail: <input type=\"email\" name=\"email\"/><br/><br/>" +
                 "<input type=\"submit\" value=\"submit\"/><br/>" +
-                "<a href=\"login\" onclick=\"startLogin(event)\">Login</a><br/>" +
+                "<a href=\"login\" onclick=\"startLogin(event)\">login</a><br/>" +
                 "<a href=\"forgotuname\" onclick=\"forgotUsername(event)\">forgot username</a><br/>" +
                 "<a href=\"createaccount\" onclick=\"create(event)\">create account</a><br/>" +
             "</form>" +
@@ -109,11 +108,11 @@ private ResponseBuilder rb = ResponseBuilder.getInstance();
     private String createHtml = "" +
         "<div>" +
             "<form id=\"create\" method=\"post\">" +
-                "Username: <input type=\"text\"/><br/><br/>" +
-                "Email: <input type=\"email\"/><br/><br/>" +
-                "Password: <input type=\"password\"/><br/><br/>" +
+                "Username: <input type=\"text\" name=\"username\"/><br/><br/>" +
+                "Email: <input type=\"email\" name=\"email\"/><br/><br/>" +
+                "Password: <input type=\"password\" name=\"password\"/><br/><br/>" +
                 "<input type=\"submit\" value=\"submit\"/><br/>" +
-                "<a href=\"login\" onclick=\"startlogin(event)\">Login</a><br/>" +
+                "<a href=\"login\" onclick=\"startLogin(event)\">login</a><br/>" +
                 "<a href=\"forgotuname\" onclick=\"forgotUsername(event)\">forgot username</a><br/>" +
                 "<a href=\"forgotpass\" onclick=\"forgotPassword(event)\">forgot password</a><br/>" +
             "</form>" +
@@ -127,7 +126,7 @@ private ResponseBuilder rb = ResponseBuilder.getInstance();
     private String resetHtml = "" +
         "<div>" +
             "<form id=\"reset\" method=\"post\">" +
-                "New Password: <input type=\"password\"/><br/><br/>" +
+                "New Password: <input type=\"password\" name=\"password\"/><br/><br/>" +
                 "<input type=\"submit\" value=\"submit\"/><br/>" +
                 "<a href=\"login\" onclick=\"startlogin(event)\">Login</a><br/>" +
                 "<a href=\"forgotuname\" onclick=\"forgotUsername(event)\">forgot username</a><br/>" +
@@ -210,7 +209,7 @@ private ResponseBuilder rb = ResponseBuilder.getInstance();
 
                     jsonObj = JSONPartsHelper.getJSONParts(req.getParts());
                     String username = jsonObj.getString("username");
-                    String password = jsonObj.getString("usrpass");
+                    String password = jsonObj.getString("password");
                                     
                     usr = userDAO.getUserFromPassword(username, password);
                     if (usr != null) {
@@ -281,6 +280,8 @@ private ResponseBuilder rb = ResponseBuilder.getInstance();
                         Mailer.send(usr.getEmail(), subj, msg);
                     }
                     rString = rb.buildResponseString(loginCmpntId, loginId, loginHtml, loginSrc);
+                    res.setContentType("application/json");
+                    res.getWriter().println(rString);
                     break;
 
                 case "emailPasswordReset":
@@ -293,9 +294,10 @@ private ResponseBuilder rb = ResponseBuilder.getInstance();
                         .filteredBy(CharacterPredicates.LETTERS, CharacterPredicates.DIGITS)
                         .build();
                     String tmppass = generator.generate(8);
+                    System.out.println("temp password: "+tmppass);
 
-                    Timestamp tm = Timestamp.from(Instant.now().plus(3, ChronoUnit.HOURS));
-                    usr = userDAO.setTempPassword(email2, tmppass, tm);
+                    Timestamp tstamp = Timestamp.from(Instant.now().plus(3, ChronoUnit.HOURS));
+                    usr = userDAO.setTempPassword(email2, tmppass, tstamp);
                     
                     if (usr != null) {
                         session.setAttribute("username", usr.getUsername());
@@ -308,6 +310,8 @@ private ResponseBuilder rb = ResponseBuilder.getInstance();
                     }
                     
                     rString = rb.buildResponseString(loginCmpntId, loginId, loginHtml, loginSrc);
+                    res.setContentType("application/json");
+                    res.getWriter().println(rString);
                     break;
                 
 
@@ -317,8 +321,12 @@ private ResponseBuilder rb = ResponseBuilder.getInstance();
                     jsonObj = JSONPartsHelper.getJSONParts(req.getParts());
 
                     String username2 = jsonObj.getString("username");
-                    String password2 = jsonObj.getString("usrpass");
+                    String password2 = jsonObj.getString("password");
                     String email3 = jsonObj.getString("email");
+                    System.out.println("Username: "+username2);
+                    System.out.println("Password: "+password2);
+                    System.out.println("Email: "+email3);
+                    
 
                     usr = userDAO.createUser(username2, password2, email3, false);
 
@@ -337,7 +345,7 @@ private ResponseBuilder rb = ResponseBuilder.getInstance();
                     
                     jsonObj = JSONPartsHelper.getJSONParts(req.getParts());
 
-                    String password3 = jsonObj.getString("usrpass");
+                    String password3 = jsonObj.getString("password");
 
                     usr = userDAO.updateUserPassword((String)session.getAttribute("username"), password3);
                     
