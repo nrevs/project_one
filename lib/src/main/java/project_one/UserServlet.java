@@ -32,15 +32,22 @@ public class UserServlet extends HttpServlet {
     private String uname = "nrevs";
     private String pwDB = "KTw6bEi8dy9vxGdRjfrM";
 
-    private String userId = "#maincontent";
+    private String userIdTag = "#maincontent";
     private String userHtml = "" +
         "<div>" +
             "<h2>Welcome {USERNAME}</h3></br></br>" +
-            "<h3>Your active sessions:</h3></br>" +
-            "<div id='userSessions'>" +
-            "</div>" +
-            "<button type=\"button\" onclick=\"getNewSession()\">new session</button></br>" +
-            "<button type=\"button\" onclick=\"logout()\">logout</button></br>" +
+                "<h3>Your active sessions:</h3></br>" +
+                    "<div id='userSessions'>" +
+                        "<table id=sessionsTable>" +
+                            "<tr>" +
+                                "<th>SessionID</th>" +
+                                "<th>Expiration</th>" +
+                                "<th>Req Count</th>" +
+                            "</tr>" +
+                        "</table>" +
+                    "</div>" +
+                "<button type=\"button\" onclick=\"getNewSession(event)\">new session</button></br>" +
+            "<button type=\"button\" onclick=\"logout(event)\">logout</button></br>" +
         "</div>";
     private String userSrc = "user.js";
     private String userCmpntId = "mainComponent";
@@ -51,7 +58,7 @@ public class UserServlet extends HttpServlet {
     {
         HttpSession session = req.getSession();
         System.out.println("user servlet service called");
-        userHtml.replaceAll("{USERNAME}",(String)session.getAttribute("username"));
+        userHtml = userHtml.replaceAll("\\{USERNAME\\}",(String)session.getAttribute("username"));
 
         try {
             Connection connection = DriverManager.getConnection(url, uname, pwDB);
@@ -64,17 +71,25 @@ public class UserServlet extends HttpServlet {
             JSONObject jsonObj = new JSONObject();
             jsonObj.put("sessions",jsonArray);
             userData = jsonObj.toJSONString();
-            
+
+            Payload payload1 = new Payload(userIdTag, userHtml, userSrc, "empty");
+            Component mainComponent = new Component(userCmpntId, payload1);
+            Payload payload2 = new Payload("#userSessions","empty","empty",userData);
+            Component seshComponent = new Component("seshComponent", payload2);
+            ArrayList<Component> cmps = new ArrayList<Component>();
+            cmps.add(mainComponent);
+            cmps.add(seshComponent);
+            String rString = rb.buildResponseString(cmps);
+
+            res.setContentType("application/json");
+            res.getWriter().println(rString);
         
         
         } catch (SQLException sqlE) {
             sqlE.printStackTrace();
         }
 
-        String rString = rb.buildResponseString(userCmpntId, userId, userHtml, userSrc, userData);
 
 
-        res.setContentType("application/json");
-        res.getWriter().println(rString);
     }
 }
