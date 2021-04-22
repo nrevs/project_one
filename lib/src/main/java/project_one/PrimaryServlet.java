@@ -36,12 +36,13 @@ import org.apache.logging.log4j.Logger;
     maxFileSize = 1024,
     maxRequestSize = 1024)
 public class PrimaryServlet extends HttpServlet{
+    final Logger logger = LogManager.getLogger(PrimaryServlet.class);
+    
     /**
      *
      */
     private static final long serialVersionUID = -6668597909242177978L;
     
-    final Logger logger = LogManager.getLogger(PrimaryServlet.class);
     
     private String url = "jdbc:postgresql://database-project-one.cjsdfjt5gj6o.us-east-1.rds.amazonaws.com:5432/projectone";
     private String uname = "nrevs";
