@@ -8,6 +8,10 @@ import java.io.IOException;
 import java.sql.DriverManager;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Calendar;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.MultipartConfig;
@@ -19,6 +23,8 @@ import javax.servlet.http.HttpSession;
 
 import com.alibaba.fastjson.JSONObject;
 
+import org.apache.commons.text.RandomStringGenerator;
+import org.apache.commons.text.CharacterPredicates;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -193,96 +199,158 @@ private ResponseBuilder rb = ResponseBuilder.getInstance();
         System.out.println("doPost -> request code: "+code);
         String rString;
 
-        switch(code) {
-            case "login":
-
-                try {
-                    JSONObject obj = JSONPartsHelper.getJSONParts(req.getParts());
-                    String username = obj.getString("username");
-                    String password = obj.getString("usrpass");
-                    
-                    try {
-                        Connection connection = DriverManager.getConnection(url, uname, pwDB);
-                        UserDAO userDAO = new UserDAO(connection);
-                        
-                        User usr = userDAO.getUser(username, password);
-                        if (usr != null) {
-                            // User found and password checks out
-                            logger.info("usr found");
-                            System.out.println("usr found");
-        
-                            session.setAttribute("username", usr.getUsername());
-                            session.setAttribute("email", usr.getEmail());
-                            session.setAttribute("id", usr.getId());
-
-                            if (usr.getTmpExpire()!=null) {
-                                System.out.println("has tmpexpire");
-                                // send to reset password
-                                rString = rb.buildResponseString(loginCmpntId, loginId, resetHtml, resetSrc);
-                                res.setContentType("application/json");
-                                res.getWriter().println(rString);
-                                return;
-                            }
-        
-                            if(usr.isAdmin()) {
-                                // user is admin
-                                logger.info("admin user");
-        
-                                session.setAttribute("isadmin",true);
-        
-                                req.getRequestDispatcher("/admin").forward(req, res);
-        
-        
-                            } else {
-                                // user is NOT admin
-                                logger.info("NOT admin user");
-                                System.out.println("not admin user, sending to user servlet");
-                                
-                                req.getRequestDispatcher("/user").forward(req, res);
-        
-                            }
-                        } else {
-                            // User password and/or username did not check out
-                            logger.info("password or username invalid");
-                            
-        
-                            Object aObj = session.getAttribute("loginattempts");
-                            int a = 0;
-                            if (aObj != null) {a  = (int)aObj;}
-                            session.setAttribute("loginattempts",++a);
-                            //TODO: invalid password or user response
-        
-                        }
-        
-                    } catch(SQLException sqlE) {
-                        sqlE.printStackTrace();
-                    }
-                } catch(IOException ioE) {
-                    ioE.printStackTrace();
-                }
-                break;
-
-            case "emailUsername":
-                System.out.println("doPost -> emailUsername");
-                // TODO: email username
-                break;
-
-            case "emailPasswordReset":
-                System.out.println("doPost -> emailPasswordReset");
-                // TODO: create temporary password
-                break;
+        JSONObject jsonObj;
+        try {
+            Connection connection = DriverManager.getConnection(url, uname, pwDB);
+            UserDAO userDAO = new UserDAO(connection);
+            User usr;
             
+            switch(code) {
+                case "login":
 
-            case "create":
-                System.out.println("doPost -> create");
-                break;
+                    jsonObj = JSONPartsHelper.getJSONParts(req.getParts());
+                    String username = jsonObj.getString("username");
+                    String password = jsonObj.getString("usrpass");
+                                    
+                    usr = userDAO.getUserFromPassword(username, password);
+                    if (usr != null) {
+                        // User found and password checks out
+                        logger.info("usr found");
+                        System.out.println("usr found");
+
+                        session.setAttribute("username", usr.getUsername());
+                        session.setAttribute("email", usr.getEmail());
+                        session.setAttribute("id", usr.getId());
+
+                        if (usr.getTmpExpire()!=null) {
+                            System.out.println("has tmpexpire");
+                            // send to reset password
+                            rString = rb.buildResponseString(loginCmpntId, loginId, resetHtml, resetSrc);
+                            res.setContentType("application/json");
+                            res.getWriter().println(rString);
+                            return;
+                        }
+
+                        if(usr.isAdmin()) {
+                            // user is admin
+                            logger.info("admin user");
+
+                            session.setAttribute("isadmin",true);
+
+                            req.getRequestDispatcher("/admin").forward(req, res);
 
 
-            case "reset":
-                System.out.println("doPost -> reset");
-                break;
+                        } else {
+                            // user is NOT admin
+                            logger.info("NOT admin user");
+                            System.out.println("not admin user, sending to user servlet");
+                            
+                            req.getRequestDispatcher("/user").forward(req, res);
+
+                        }
+                    } else {
+                        // User password and/or username did not check out
+                        logger.info("password or username invalid");
+                        
+
+                        Object aObj = session.getAttribute("loginattempts");
+                        int a = 0;
+                        if (aObj != null) {a  = (int)aObj;}
+                        session.setAttribute("loginattempts",++a);
+                        //TODO: invalid password or user response
+
+                    }
+        
+                    break;
+
+                case "emailUsername":
+                    
+                    System.out.println("doPost -> emailUsername");
+
+                    jsonObj = JSONPartsHelper.getJSONParts(req.getParts());
+                    String email1 = jsonObj.getString("email");
+                    
+                    usr = userDAO.getUserFromEmail(email1);
+                    if (usr != null) {
+                        session.setAttribute("username", usr.getUsername());
+                        session.setAttribute("email", usr.getEmail());
+                        session.setAttribute("id", usr.getId());
+
+                        String subj = "Your Username";
+                        String msg = "Your username is: "+usr.getUsername();
+                        Mailer.send(usr.getEmail(), subj, msg);
+                    }
+                    rString = rb.buildResponseString(loginCmpntId, loginId, loginHtml, loginSrc);
+                    break;
+
+                case "emailPasswordReset":
+                    System.out.println("doPost -> emailPasswordReset");
+                    
+                    jsonObj = JSONPartsHelper.getJSONParts(req.getParts());
+                    String email2 = jsonObj.getString("email");
+                    RandomStringGenerator generator = new RandomStringGenerator.Builder()
+                        .withinRange('0','z')
+                        .filteredBy(CharacterPredicates.LETTERS, CharacterPredicates.DIGITS)
+                        .build();
+                    String tmppass = generator.generate(8);
+
+                    Timestamp tm = Timestamp.from(Instant.now().plus(3, ChronoUnit.HOURS));
+                    usr = userDAO.setTempPassword(email2, tmppass, tm);
+                    
+                    if (usr != null) {
+                        session.setAttribute("username", usr.getUsername());
+                        session.setAttribute("email", usr.getEmail());
+                        session.setAttribute("id", usr.getId());
+
+                        String subj = "Temporary Password";
+                        String msg = "Your temprorary password is: "+tmppass;
+                        Mailer.send(usr.getEmail(), subj, msg);
+                    }
+                    
+                    rString = rb.buildResponseString(loginCmpntId, loginId, loginHtml, loginSrc);
+                    break;
+                
+
+                case "create":
+                    System.out.println("doPost -> create");
+
+                    jsonObj = JSONPartsHelper.getJSONParts(req.getParts());
+
+                    String username2 = jsonObj.getString("username");
+                    String password2 = jsonObj.getString("usrpass");
+                    String email3 = jsonObj.getString("email");
+
+                    usr = userDAO.createUser(username2, password2, email3, false);
+
+                    if (usr != null) {
+                        session.setAttribute("username", usr.getUsername());
+                        session.setAttribute("email", usr.getEmail());
+                        session.setAttribute("id", usr.getId());
+
+                        req.getRequestDispatcher("/user").forward(req, res);
+                    }
+                    break;
+
+
+                case "reset":
+                    System.out.println("doPost -> reset");
+                    
+                    jsonObj = JSONPartsHelper.getJSONParts(req.getParts());
+
+                    String password3 = jsonObj.getString("usrpass");
+
+                    usr = userDAO.updateUserPassword((String)session.getAttribute("username"), password3);
+                    
+                    if (usr != null) {
+                        req.getRequestDispatcher("/user").forward(req, res);
+                    }
+
+                    break;
 
             }
+        } catch (SQLException sqlE) {
+            sqlE.printStackTrace();
+        }
         
 
         

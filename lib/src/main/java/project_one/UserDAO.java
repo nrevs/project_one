@@ -28,7 +28,8 @@ public class UserDAO {
         _connection = connection;
     }
 
-    public User getUser(String username, String pw) {
+
+    public User getUserFromPassword(String username, String pw) {
 
         try {
             PreparedStatement pStatement = _connection.prepareStatement(
@@ -85,6 +86,131 @@ public class UserDAO {
              e.printStackTrace();
              return null;
         }
+    }
 
+
+    public User getUserFromEmail(String email) {
+        try {
+            PreparedStatement pStatement = _connection.prepareStatement(
+               // "SELECT password = crypt(?,password), id, username, email, admin, activesessions FROM users WHERE username = ?;"
+                "SELECT id, username, email, admin, activesessions, tmpexpire FROM users WHERE email = ?;"
+            );
+
+            pStatement.setString(1, email);
+            
+            ResultSet rSet = pStatement.executeQuery();
+            System.out.println("getUserFromEmail");
+            
+            if(rSet.first()){
+                User usr = new User(rSet.getInt(id), rSet.getString(un), rSet.getString(email), rSet.getBoolean(admin), rSet.getInt(as), null);
+                return usr;
+            } else {
+                return null;
+            }
+
+        } catch(SQLException e) {
+             e.printStackTrace();
+             return null;
+        }
+    }
+
+
+    public User setTempPassword(String email, String tmppass, Timestamp timestamp) {
+        try {
+            PreparedStatement pStatement = _connection.prepareStatement(
+                "UPDATE users SET tmppassword = crypt(?,gen_salt('bf')), tmpexpire = ? WHERE email = ?");
+            
+            pStatement.setString(1, tmppass);
+            pStatement.setTimestamp(2, timestamp);
+            pStatement.setString(3, email);
+            if (pStatement.executeUpdate()>0) {
+                pStatement = _connection.prepareStatement(
+                    "SELECT id, username, email, admin, activesessions, tmpexpire FROM users WHERE email = ?;"
+                );
+                pStatement.setString(1, email);
+                ResultSet rSet = pStatement.executeQuery();
+
+                while(rSet.next()) {
+                    User usr = new User(rSet.getInt(id), rSet.getString(un), rSet.getString(email), rSet.getBoolean(admin), rSet.getInt(as), rSet.getTimestamp(tmpexpire));
+                    return usr;
+                }
+            } else {
+                return null;
+            }
+        } catch(SQLException sqlE) {
+            sqlE.printStackTrace();
+        }
+        return null;
+    }
+
+    public User createUser(String username, String password, String email, boolean admin) {
+        try {
+            PreparedStatement pStatement = _connection.prepareStatement(
+                "SELECT id, username, email, admin, activesessions, tmpexpire FROM users WHERE username = ?;"
+            );
+            
+            pStatement.setString(1, username);
+            ResultSet rSet = pStatement.executeQuery();
+            if (rSet.first()) {
+                // Already user with that username
+                return null;
+            } else {
+
+                pStatement = _connection.prepareStatement(
+                    "INSERT INTO users (username, password, email, admin) "+
+                    "VALUES (" +
+                    "?, " +
+                    "crypt(?,gen_salt('bf')), " +
+                    "?, " +
+                    "?" +
+                    ");"
+                );
+                pStatement.setString(1, username);
+                pStatement.setString(2, password);
+                pStatement.setString(3, email);
+                pStatement.setBoolean(4, admin);
+                
+                if (pStatement.executeUpdate()>0) {
+                    pStatement = _connection.prepareStatement(
+                        "SELECT id, username, email, admin, activesessions, tmpexpire FROM users WHERE username = ?;"
+                    );
+                    pStatement.setString(1, username);
+                    rSet = pStatement.executeQuery();
+                    User usr = new User(rSet.getInt(this.id), rSet.getString(this.un), rSet.getString(this.email), rSet.getBoolean(this.admin), rSet.getInt(this.as), rSet.getTimestamp(this.tmpexpire));
+                    return usr;
+                }
+            }
+        } catch(SQLException sqlE) {
+            sqlE.printStackTrace();
+        }
+        return null;
+    }
+
+    public User updateUserPassword(String username, String password) {
+        try {
+            PreparedStatement pStatement = _connection.prepareStatement(
+                "UPDATE users SET password = crypt(?,gen_salt('bf')), tmppassword = null, tmpexpire = null WHERE username = ?");
+            
+            pStatement.setString(1, password);
+            pStatement.setString(2, username);
+
+            if (pStatement.executeUpdate()>0) {
+                pStatement = _connection.prepareStatement(
+                    "SELECT id, username, email, admin, activesessions, tmpexpire FROM users WHERE username = ?;"
+                );
+                pStatement.setString(1, username);
+                ResultSet rSet = pStatement.executeQuery();
+
+                if(rSet.first()) {
+                    User usr = new User(rSet.getInt(id), rSet.getString(un), rSet.getString(email), rSet.getBoolean(admin), rSet.getInt(as), rSet.getTimestamp(tmpexpire));
+                    return usr;
+                }
+            } else {
+                return null;
+            }
+        } catch(SQLException sqlE) {
+            sqlE.printStackTrace();
+        }
+        return null;
     }
 }

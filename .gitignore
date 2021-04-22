@@ -31,3 +31,6 @@ build
 .vscode
 .project
 lib/.project
+
+# Secret configuration file! !IMPORTANT! You have to set .myconfig in resources so it works in your environment
+.myconfig
