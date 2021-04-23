@@ -89,7 +89,7 @@ public class AdminServlet extends HttpServlet {
         String code = req.getParameter("code");
         if(code == "logout") return;
         String rString;
-        System.out.println(code);
+        System.out.println("CODE: "+code);
         if (code != null) {
             switch(code) {
                 case "login":
@@ -126,6 +126,7 @@ public class AdminServlet extends HttpServlet {
                         // TODO Auto-generated catch block
                         e.printStackTrace();
                     }
+                    System.out.println("send Admin response string");
                     rString = rb.buildResponseString(adminCompntId, adminId, adminHtml, adminSrc);
                     logger.info("service -> response string: {}",rString);
                 

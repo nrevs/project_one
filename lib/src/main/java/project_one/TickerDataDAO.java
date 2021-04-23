@@ -43,6 +43,7 @@ public class TickerDataDAO {
             // String totaltrades) {
 
         String symbolstring = jsonObj.getString("symbolstring");
+        symbolstring = symbolstring.toLowerCase(); //!IMPORTANT! per SQL standard
         JSONArray eoddata = jsonObj.getJSONArray("eoddata");
 
         int code = 0;
@@ -52,24 +53,39 @@ public class TickerDataDAO {
             );
             pStatement.setString(1, symbolstring);
             ResultSet rSet = pStatement.executeQuery();
+            
             if(rSet.next()==false) {
                 // Ticker does not exist, make table for ticker
                 pStatement.close();
-                pStatement = _connection.prepareStatement(
-                    "CREATE TABLE public.? (" +
-                        "data date COLLATE pg_catalog.\"default\" NOT NULL PRIMARY KEY," +
+                String createTable = "" +
+                    "CREATE TABLE {TABLE_NAME} (" +
+                        "date date NOT NULL," +
                         "high numeric(10,2) NOT NULL," +
                         "low numeric(10,2) NOT NULL," +
                         "open numeric(10,2) NOT NULL," +
                         "close numeric(10,2) NOT NULL," +
                         "sharevolume integer NOT NULL," +
-                        "totaltrades integer NOT NULL" +
-                    ") "
-                );
-                pStatement.setString(1, symbolstring);
-                code = pStatement.executeUpdate();
+                        "totaltrades integer NOT NULL," +
+                        "CONSTRAINT {TABLE_NAME}_pkey PRIMARY KEY (date)" +
+                    ");";
+                createTable = createTable.replaceAll("\\{TABLE_NAME\\}",symbolstring);
+
+                pStatement = _connection.prepareStatement(createTable);
+                pStatement.execute();
                 System.out.println("SQL CODE: "+String.valueOf(code));
                 pStatement.close();
+
+                pStatement = _connection.prepareStatement(
+                    "INSERT INTO tickers (ticker) VALUES (?);"
+                );
+                pStatement.setString(1, symbolstring);
+
+                String insertString = "" +
+                "INSERT INTO {TABLE_NAME} (date, high, low, open, close, sharevolume, totaltrades) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?);";
+                    //  1, 2, 3, 4, 5, 6, 7
+                insertString = insertString.replaceAll("\\{TABLE_NAME\\}",symbolstring);
+
                 for(Object eod : eoddata){
                     JSONObject jsonEod = (JSONObject) eod;
                     Date date = (Date) jsonEod.getDate("date");
@@ -81,23 +97,18 @@ public class TickerDataDAO {
                     int totaltrades = jsonEod.getIntValue("totaltrades");
 
                     if (totaltrades > 0) {
-                        pStatement = _connection.prepareStatement(
-                            "INSERT INTO ? (date, high, low, open, close, sharevolume, totaltrades) " +
-                            "VALUES (?, ?, ?, ?, ?, ?, ?);"
-                                   //2, 3, 4, 5, 6, 7, 8
-                        );
-                        pStatement.setString(1, symbolstring);
-                        pStatement.setDate(2, date);
-                        pStatement.setFloat(3,high);
-                        pStatement.setFloat(4,low);
-                        pStatement.setFloat(5,open);
-                        pStatement.setFloat(6,close);
-                        pStatement.setInt(7,sharevolume);
-                        pStatement.setInt(8,totaltrades);
+                        pStatement = _connection.prepareStatement(insertString);
+                        
+                        pStatement.setDate(1, date);
+                        pStatement.setFloat(2,high);
+                        pStatement.setFloat(3,low);
+                        pStatement.setFloat(4,open);
+                        pStatement.setFloat(5,close);
+                        pStatement.setInt(6,sharevolume);
+                        pStatement.setInt(7,totaltrades);
                         code = pStatement.executeUpdate();
+                        pStatement.close();
                     }
-                    
-                    
                 }
                 
             } else {

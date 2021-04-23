@@ -54,7 +54,7 @@ public class UsrSessionDAO {
         try {
 
             PreparedStatement pStatement = _connection.prepareStatement(
-                "DELETE * from activesessions WHERE expir < ?;"
+                "DELETE FROM activesessions WHERE expir < ?;"
             );
             Timestamp rightNow = new Timestamp( System.currentTimeMillis() );
             pStatement.setTimestamp(1, rightNow);
@@ -75,7 +75,7 @@ public class UsrSessionDAO {
         List<UsrSession> usrSessions = new ArrayList<UsrSession>();
         try {
             PreparedStatement pStatement = _connection.prepareStatement(
-                "SELECT * from activesessions WHERE userid = ?;"
+                "SELECT userid, expir, reqcount, sessionid FROM activesessions WHERE userid = ?;"
             );
             pStatement.setInt(1, userId);
             ResultSet rSet = pStatement.executeQuery();

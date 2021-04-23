@@ -4,9 +4,6 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 
 import javax.servlet.ServletException;
@@ -50,7 +47,7 @@ public class UserServlet extends HttpServlet {
                         "</table>" +
                     "</div>" +
                 "<button type=\"button\" onclick=\"getNewSession(event)\">new session</button></br>" +
-            "<button id=\"userLogoutButton\" type=\"button\">logout</button></br>" +
+            "<button id=\"userLogoutButton\" type=\"button\" onclick=\"logoutUser(event)\" >logout</button></br>" +
         "</div>";
     private String userSrc = "user.js";
     private String userCmpntId = "mainComponent";
