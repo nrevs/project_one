@@ -1,8 +1,10 @@
 package project_one;
 
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
@@ -31,7 +33,6 @@ public class TickerDataDAO {
 
     public int loadData(JSONObject jsonObj) {
         
-    
             // String symbolstring,
             // String date, 
             // String high, 
@@ -40,10 +41,11 @@ public class TickerDataDAO {
             // String close,
             // String sharevolume,
             // String totaltrades) {
+
         String symbolstring = jsonObj.getString("symbolstring");
         JSONArray eoddata = jsonObj.getJSONArray("eoddata");
 
-        int code;
+        int code = 0;
         try {
             PreparedStatement pStatement = _connection.prepareStatement(
                 "SELECT ticker from tickers WHERE ticker=?;"
@@ -69,20 +71,46 @@ public class TickerDataDAO {
                 System.out.println("SQL CODE: "+String.valueOf(code));
                 pStatement.close();
                 for(Object eod : eoddata){
+                    JSONObject jsonEod = (JSONObject) eod;
+                    Date date = (Date) jsonEod.getDate("date");
+                    Float high = jsonEod.getFloat("high");
+                    Float low = jsonEod.getFloat("low");
+                    Float open = jsonEod.getFloat("open");
+                    Float close = jsonEod.getFloat("close");
+                    int sharevolume = jsonEod.getIntValue("sharevolume");
+                    int totaltrades = jsonEod.getIntValue("totaltrades");
                     
+                    pStatement = _connection.prepareStatement(
+                        "INSERT INTO ? (date, high, low, open, close, sharevolume, totaltrades) " +
+                        "VALUES (?, ?, ?, ?, ?, ?, ?);"
+                               //2, 3, 4, 5, 6, 7, 8
+                    );
+                    pStatement.setString(1, symbolstring);
+                    pStatement.setDate(2, date);
+                    pStatement.setFloat(3,high);
+                    pStatement.setFloat(4,low);
+                    pStatement.setFloat(5,open);
+                    pStatement.setFloat(6,close);
+                    pStatement.setInt(7,sharevolume);
+                    pStatement.setInt(8,totaltrades);
+                    code = pStatement.executeUpdate();
                 }
-                pStatement = _connection.prepareStatement(
-                    "INSERT INTO ? (date, high, low, open, close, sharevolume, "
-                );
+                
             } else {
+                //TODO: FILL IN THIS SITUATION
                 // Ticker exists, so table should exist for ticker
             }
             
 
+        } catch(SQLException sqlE) {
+            sqlE.printStackTrace();
         }
+        return code;
+    }
 
-        int rows = 0;
-        return rows;
+    public JSONObject getTickerData(String symbolstring) {
+        JSONObject jsonObj = new JSONObject();
+        return jsonObj;
     }
     
 }
