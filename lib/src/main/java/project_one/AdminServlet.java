@@ -41,6 +41,7 @@ public class AdminServlet extends HttpServlet {
     private String pwDB = "KTw6bEi8dy9vxGdRjfrM";
 
 
+    private String justCalledString="";
 
 
     private String adminId = "#maincontent";
@@ -77,12 +78,14 @@ public class AdminServlet extends HttpServlet {
     // }
 
     @Override
-    protected void service(HttpServletRequest req, HttpServletResponse res) 
+    protected void doPost(HttpServletRequest req, HttpServletResponse res) 
         throws ServletException, IOException
     {
+
         System.out.println("AdminServlet -> service called");
 
         HttpSession session = req.getSession();
+
 
         JSONObject jsonObj;
 
@@ -113,11 +116,21 @@ public class AdminServlet extends HttpServlet {
                         List<Part> theParts = (List<Part>) req.getParts();
                     
                         jsonObj = JSONPartsHelper.getJSONParts(theParts);
-                        
+
                         Connection connection = DriverManager.getConnection(url, uname, pwDB);
                         TickerDataDAO tickerDataDAO = new TickerDataDAO(connection);
                         
                         JSONObject stockUploader = jsonObj.getJSONObject("stockUploader");
+
+                        String symbolstring = stockUploader.getString("symbolstring");
+                        System.out.println("Symbolstring: "+symbolstring);
+                        System.out.println("justCalledString: "+justCalledString);
+                        symbolstring = symbolstring.toLowerCase();
+                        if(justCalledString.equals(symbolstring)){
+                            return;
+                        }
+                        justCalledString = symbolstring;
+
                         tickerDataDAO.loadData(stockUploader);
                         
                     } catch (ServletException sE) {

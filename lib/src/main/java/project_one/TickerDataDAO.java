@@ -56,7 +56,7 @@ public class TickerDataDAO {
             
             if(rSet.next()==false) {
                 // Ticker does not exist, make table for ticker
-                pStatement.close();
+
                 String createTable = "" +
                     "CREATE TABLE {TABLE_NAME} (" +
                         "date date NOT NULL," +
@@ -73,21 +73,26 @@ public class TickerDataDAO {
                 pStatement = _connection.prepareStatement(createTable);
                 pStatement.execute();
                 System.out.println("SQL CODE: "+String.valueOf(code));
-                pStatement.close();
+                
 
                 pStatement = _connection.prepareStatement(
                     "INSERT INTO tickers (ticker) VALUES (?);"
                 );
                 pStatement.setString(1, symbolstring);
+                pStatement.executeUpdate();
 
                 String insertString = "" +
                 "INSERT INTO {TABLE_NAME} (date, high, low, open, close, sharevolume, totaltrades) " +
                 "VALUES (?, ?, ?, ?, ?, ?, ?);";
                     //  1, 2, 3, 4, 5, 6, 7
                 insertString = insertString.replaceAll("\\{TABLE_NAME\\}",symbolstring);
-
+                
                 for(Object eod : eoddata){
+                    System.out.println("enterind data");
+                    
                     JSONObject jsonEod = (JSONObject) eod;
+                    System.out.println(jsonEod.toJSONString());
+
                     Date date = (Date) jsonEod.getDate("date");
                     Float high = jsonEod.getFloat("high");
                     Float low = jsonEod.getFloat("low");
