@@ -79,21 +79,25 @@ public class TickerDataDAO {
                     Float close = jsonEod.getFloat("close");
                     int sharevolume = jsonEod.getIntValue("sharevolume");
                     int totaltrades = jsonEod.getIntValue("totaltrades");
+
+                    if (totaltrades > 0) {
+                        pStatement = _connection.prepareStatement(
+                            "INSERT INTO ? (date, high, low, open, close, sharevolume, totaltrades) " +
+                            "VALUES (?, ?, ?, ?, ?, ?, ?);"
+                                   //2, 3, 4, 5, 6, 7, 8
+                        );
+                        pStatement.setString(1, symbolstring);
+                        pStatement.setDate(2, date);
+                        pStatement.setFloat(3,high);
+                        pStatement.setFloat(4,low);
+                        pStatement.setFloat(5,open);
+                        pStatement.setFloat(6,close);
+                        pStatement.setInt(7,sharevolume);
+                        pStatement.setInt(8,totaltrades);
+                        code = pStatement.executeUpdate();
+                    }
                     
-                    pStatement = _connection.prepareStatement(
-                        "INSERT INTO ? (date, high, low, open, close, sharevolume, totaltrades) " +
-                        "VALUES (?, ?, ?, ?, ?, ?, ?);"
-                               //2, 3, 4, 5, 6, 7, 8
-                    );
-                    pStatement.setString(1, symbolstring);
-                    pStatement.setDate(2, date);
-                    pStatement.setFloat(3,high);
-                    pStatement.setFloat(4,low);
-                    pStatement.setFloat(5,open);
-                    pStatement.setFloat(6,close);
-                    pStatement.setInt(7,sharevolume);
-                    pStatement.setInt(8,totaltrades);
-                    code = pStatement.executeUpdate();
+                    
                 }
                 
             } else {

@@ -43,14 +43,12 @@ public class PrimaryServlet extends HttpServlet{
      */
     private static final long serialVersionUID = -6668597909242177978L;
     
+    private ResponseBuilder rb = ResponseBuilder.getInstance();
     
     private String url = "jdbc:postgresql://database-project-one.cjsdfjt5gj6o.us-east-1.rds.amazonaws.com:5432/projectone";
     private String uname = "nrevs";
     private String pwDB = "KTw6bEi8dy9vxGdRjfrM";
 
-    private DBManager dbManager = new DBManager();
-
-private ResponseBuilder rb = ResponseBuilder.getInstance();
 
 
     /*

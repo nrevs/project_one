@@ -1,6 +1,9 @@
 package project_one;
 
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.List;
 
 import javax.servlet.ServletException;
@@ -25,14 +28,19 @@ import org.apache.logging.log4j.Logger;
     maxFileSize = 1024 *1024 * 4,
     maxRequestSize = 1024 * 1024 * 5 * 5)
 public class AdminServlet extends HttpServlet {
+    final Logger logger = LogManager.getLogger(AdminServlet.class);
     /**
      *
      */
     private static final long serialVersionUID = -6421597909242177978L;
+
     private ResponseBuilder rb = ResponseBuilder.getInstance();
 
-    
-    final Logger logger = LogManager.getLogger(AdminServlet.class);
+    private String url = "jdbc:postgresql://database-project-one.cjsdfjt5gj6o.us-east-1.rds.amazonaws.com:5432/projectone";
+    private String uname = "nrevs";
+    private String pwDB = "KTw6bEi8dy9vxGdRjfrM";
+
+
 
 
     private String adminId = "#maincontent";
@@ -105,23 +113,18 @@ public class AdminServlet extends HttpServlet {
                         List<Part> theParts = (List<Part>) req.getParts();
                     
                         jsonObj = JSONPartsHelper.getJSONParts(theParts);
-                            
+                        
+                        Connection connection = DriverManager.getConnection(url, uname, pwDB);
+                        TickerDataDAO tickerDataDAO = new TickerDataDAO(connection);
+                        
                         JSONObject stockUploader = jsonObj.getJSONObject("stockUploader");
-                        JSONObject equityInfo = stockUploader.getJSONObject("equityinfo");
-                        JSONArray eoddata = stockUploader.getJSONArray("eoddata");
-                        JSONObject key = stockUploader.getJSONObject("key");
-                
-                        System.out.println("\nKEY:");
-                        System.out.println(key.toJSONString());
-                        System.out.println("\n");
-                        System.out.println("\nEQUITYINFO:");
-                        System.out.println(equityInfo.toJSONString());
-                        System.out.println("\n");
-                        System.out.println("\nEODDATA:");
-                        System.out.println(eoddata.toJSONString());
-                        System.out.println("\n");
+                        tickerDataDAO.loadData(stockUploader);
+                        
                     } catch (ServletException sE) {
                         System.out.println("not multipart form");
+                    } catch (SQLException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
                     }
                     rString = rb.buildResponseString(adminCompntId, adminId, adminHtml, adminSrc);
                     logger.info("service -> response string: {}",rString);
