@@ -22,7 +22,7 @@ import com.alibaba.fastjson.JSONObject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-@WebServlet("/user")
+@WebServlet(urlPatterns = "/user")
 public class UserServlet extends HttpServlet {
 
     final Logger logger = LogManager.getLogger(UserServlet.class);
@@ -50,12 +50,13 @@ public class UserServlet extends HttpServlet {
                         "</table>" +
                     "</div>" +
                 "<button type=\"button\" onclick=\"getNewSession(event)\">new session</button></br>" +
-            "<button type=\"button\" onclick=\"logout(event)\">logout</button></br>" +
+            "<button id=\"userLogoutButton\" type=\"button\">logout</button></br>" +
         "</div>";
     private String userSrc = "user.js";
     private String userCmpntId = "mainComponent";
     private String userData = "";
 
+    @Override
     protected void service(HttpServletRequest req, HttpServletResponse res)
         throws ServletException, IOException
     {

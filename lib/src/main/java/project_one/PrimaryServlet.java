@@ -30,7 +30,7 @@ import org.apache.logging.log4j.Logger;
 
 
 
-@WebServlet("/login")
+@WebServlet(urlPatterns = "/login")
 @MultipartConfig(location="/tmp",
     fileSizeThreshold = 1024,
     maxFileSize = 1024,
@@ -148,15 +148,22 @@ private ResponseBuilder rb = ResponseBuilder.getInstance();
     {
         String code = req.getParameter("code");
         logger.info("doGet -> request code: {}",code);
+        System.out.println("doGet -> request code: "+code);
 
         HttpSession session = req.getSession();
-        String uname = "username";
-        if (session.getAttribute(uname)!=null) {
-            String isadmin = "isadmin";
-            if (session.getAttribute(isadmin)!=null) {
-                req.getRequestDispatcher("/admin").forward(req, res);
-            } else {
-                req.getRequestDispatcher("/user").forward(req,res);
+        if(code.equals("logout")){
+            System.out.println("code.equals(logout)");
+            session.invalidate();
+        } else {
+            String uname = "username";
+            if (session.getAttribute(uname)!=null) {
+                String isadmin = "isadmin";
+                if (session.getAttribute(isadmin)!=null) {
+                    System.out.println("Login --> Admin");
+                    req.getRequestDispatcher("/admin").forward(req, res);
+                } else {
+                    req.getRequestDispatcher("/user").forward(req,res);
+                }
             }
         }
 
@@ -176,7 +183,7 @@ private ResponseBuilder rb = ResponseBuilder.getInstance();
                 rString = rb.buildResponseString(loginCmpntId, loginId, createHtml, createSrc);
                 break;
             case "logout":
-                session.invalidate();
+                System.out.println("switch code --> logout");
                 rString = rb.buildResponseString(loginCmpntId, loginId, loginHtml, loginSrc);
                 break;
             }
@@ -186,6 +193,7 @@ private ResponseBuilder rb = ResponseBuilder.getInstance();
         if (rString != "") {
             res.setContentType("application/json");
             res.getWriter().println(rString);
+            res.getWriter().close();
         }
     }
 
