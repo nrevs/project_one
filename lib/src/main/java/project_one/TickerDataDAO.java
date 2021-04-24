@@ -148,6 +148,12 @@ public class TickerDataDAO {
     }
 
 
+    public JSONArray getTickersDataByTicker(String ticker) {
+        JSONArray jsonArray = new JSONArray();
+
+        return jsonArray;
+    }
+
     /*
     *   GETS THE TABLE OF TICKER SYMBOLS
     */

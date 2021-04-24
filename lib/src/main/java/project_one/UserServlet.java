@@ -27,7 +27,6 @@ public class UserServlet extends HttpServlet {
     private static final long serialVersionUID = 2L;
     private ResponseBuilder rb = ResponseBuilder.getInstance();
 
-
     private String url = "jdbc:postgresql://database-project-one.cjsdfjt5gj6o.us-east-1.rds.amazonaws.com:5432/projectone";
     private String uname = "nrevs";
     private String pwDB = "KTw6bEi8dy9vxGdRjfrM";
@@ -53,11 +52,12 @@ public class UserServlet extends HttpServlet {
                         "<tbody id=sessionsTableBody>" +
                         "</tbody>" +
                     "</table>" +
+                    "<input type=\"hidden\" name=\"username\" value=\"{USERNAME}\"/>" +
                 "</form>" +
                 "<label for=\"tickers\">Choose a Ticker:</label>" +
-                "<select id=\"tickers\" name=\"tickerslist\" form=\"sessionsForm\">" +
+                "<select id=\"tickers\" name=\"ticker\" form=\"sessionsForm\">" +
                 "</select></br></br>" + 
-                "<button type=\"button\" onclick=\"getApiData(event)\">GET DATA</button>" +
+                "<button id=\"getApiDataButton\" type=\"button\" onclick=\"getApiData(event)\">GET DATA</button>" +
             "</div>" + 
             "<div id=\"apicontent\">" +
             "</div>" +
@@ -78,10 +78,18 @@ public class UserServlet extends HttpServlet {
 
         System.out.println("user servlet service called");
         userHtml = userHtml.replaceAll("\\{USERNAME\\}", username);
-
+        System.out.println(userHtml);
         try {
+            // connection and DAOs setup
             Connection connection = DriverManager.getConnection(url, uname, pwDB);
             UsrSessionDAO usrSeshDAO = new UsrSessionDAO(connection);
+            TickerDataDAO tickerDataDAO = new TickerDataDAO(connection);
+
+            // mainComponent
+            Payload payload1 = new Payload(userIdTag, userHtml, userSrc, "empty");
+            Component mainComponent = new Component(userCmpntId, payload1);
+
+            // seshComponent
             ArrayList<UsrSession> usrSessions;
 
             usrSessions = (ArrayList<UsrSession>)usrSeshDAO.getUsrSessionsByUserId((int)session.getAttribute("id"));
@@ -92,27 +100,22 @@ public class UserServlet extends HttpServlet {
             JSONObject jsonUsrData = new JSONObject();
             jsonUsrData.put("sessions",jsonArray);
             userData = jsonUsrData.toJSONString();
-
-            Payload payload1 = new Payload(userIdTag, userHtml, userSrc, "empty");
-            Component mainComponent = new Component(userCmpntId, payload1);
-
-            // seshComponent
+     
             Payload payload2 = new Payload("#sessionsTableBody","empty","empty",userData);
             Component seshComponent = new Component("seshComponent", payload2);
 
-            TickerDataDAO tickerDataDAO = new TickerDataDAO(connection);
-            
+            // tickerComponent
             JSONArray tickersArray = tickerDataDAO.getTickersArray();
             
             JSONObject jsonTickerData = new JSONObject();
             jsonTickerData.put("tickers", tickersArray);
             tickersData = jsonTickerData.toJSONString();
             System.out.println(tickersData);
-            
-            // tickerComponent
+                       
             Payload payload3 = new Payload("#tickers","empty", "empty", tickersData);
             Component tickersComponent = new Component("tickersComponent", payload3);
             
+            // build response
             ArrayList<Component> cmps = new ArrayList<Component>();
             cmps.add(mainComponent);
             cmps.add(seshComponent);

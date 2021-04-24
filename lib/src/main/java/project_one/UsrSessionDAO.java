@@ -28,6 +28,24 @@ public class UsrSessionDAO {
         _connection = connection;
     }
 
+    public int getRequestCountBySessionId(String sessionId) {
+        int count = 11;
+        try {
+            PreparedStatement pStatement = _connection.prepareStatement(
+                "SELECT reqcount FROM activesessions WHERE sessionid=?);"
+            );
+            UUID uuid = UUID.fromString(sessionId);
+            pStatement.setObject(1, uuid);
+            ResultSet rSet = pStatement.executeQuery();
+            rSet.next();
+            count = rSet.getInt("reqcount");
+
+        } catch(SQLException sqlE) {
+            sqlE.printStackTrace();
+        }
+        return count;
+    }
+
     public void incrementRequestCount(String sessionId) {
         try {
             PreparedStatement pStatement = _connection.prepareStatement(
