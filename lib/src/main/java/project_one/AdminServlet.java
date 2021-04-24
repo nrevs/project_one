@@ -23,7 +23,7 @@ import org.apache.logging.log4j.Logger;
 
 
 @WebServlet(urlPatterns = "/admin")
-@MultipartConfig(location="/tmp",
+@MultipartConfig(
     fileSizeThreshold = 1024 * 1024,
     maxFileSize = 1024 *1024 * 4,
     maxRequestSize = 1024 * 1024 * 5 * 5)
@@ -81,10 +81,12 @@ public class AdminServlet extends HttpServlet {
     protected void doPost(HttpServletRequest req, HttpServletResponse res) 
         throws ServletException, IOException
     {
-
+        Long contentLength = req.getContentLengthLong();
+        System.out.println("Content Length: "+String.valueOf(contentLength));
         System.out.println("AdminServlet -> service called");
 
         HttpSession session = req.getSession();
+        System.out.println("SessionID: "+String.valueOf(session.getId()));
 
 
         JSONObject jsonObj;
@@ -123,11 +125,12 @@ public class AdminServlet extends HttpServlet {
                         JSONObject stockUploader = jsonObj.getJSONObject("stockUploader");
 
                         String symbolstring = stockUploader.getString("symbolstring");
+                        symbolstring = symbolstring.toLowerCase();
                         System.out.println("Symbolstring: "+symbolstring);
                         System.out.println("justCalledString: "+justCalledString);
-                        symbolstring = symbolstring.toLowerCase();
+
                         if(justCalledString.equals(symbolstring)){
-                            return;
+                            break;
                         }
                         justCalledString = symbolstring;
 
@@ -145,7 +148,6 @@ public class AdminServlet extends HttpServlet {
                 
                     res.setContentType("application/json");
                     res.getWriter().println(rString);
-                    res.getWriter().close();
                     break;
 
                 }

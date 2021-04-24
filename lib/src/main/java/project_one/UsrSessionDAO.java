@@ -9,7 +9,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
-
+import java.util.UUID;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -28,11 +28,43 @@ public class UsrSessionDAO {
         _connection = connection;
     }
 
+    public void incrementRequestCount(String sessionId) {
+        try {
+            PreparedStatement pStatement = _connection.prepareStatement(
+                "UPDATE activesessions SET reqcount = reqcount + 1 WHERE sessionid=?);"
+            );
+            UUID uuid = UUID.fromString(sessionId);
+            pStatement.setObject(1, uuid);
+            pStatement.executeUpdate();
+
+        } catch(SQLException sqlE) {
+            sqlE.printStackTrace();
+        }
+    }
+
+    public int getActiveSessionsCountByUserId(int userId) {
+        int asessions = 0;
+        clearStaleSessionsByUserId(userId);
+        try {
+            PreparedStatement pStatement = _connection.prepareStatement(
+                "SELECT COUNT(userid)::int FROM activesessions WHERE userid=?;"
+            );
+            pStatement.setInt(1, userId);
+            ResultSet rSet = pStatement.executeQuery();
+            rSet.next();
+            asessions = rSet.getInt(1);
+
+        } catch(SQLException sqlE) {
+            sqlE.printStackTrace();
+        }
+        return asessions;
+    }
     
-    public int createUsrSession(int userId) {
+    public int createUsrSessionByUserId(int userId) {
 
         int rows = 0;
         Timestamp tstamp = Timestamp.from(Instant.now().plus(24, ChronoUnit.HOURS));
+        System.out.println("timestamp: "+tstamp.toString());
 
         try {
             PreparedStatement pStatement = _connection.prepareStatement(
@@ -66,12 +98,33 @@ public class UsrSessionDAO {
         return rows;
     }
 
+    public int clearStaleSessionsByUserId(int userId) {
+        int rows = 0;
+        try {
+
+            PreparedStatement pStatement = _connection.prepareStatement(
+                "DELETE FROM activesessions WHERE userid = ? AND expir < ?;"
+            );
+            pStatement.setInt(1, userId);
+            Timestamp rightNow = new Timestamp( System.currentTimeMillis() );
+            pStatement.setTimestamp(2, rightNow);
+            rows = pStatement.executeUpdate();
+            
+        } catch(SQLException sqlE) {
+            sqlE.printStackTrace();
+        }
+        return rows;
+    }
+
 
     public List<UsrSession> getUsrSessionsByUserId(int userId) {
 
-        createUsrSession(userId);
-        clearStaleSessions();
-
+        UserDAO userDAO = new UserDAO(this._connection);
+        int asessions = userDAO.updateActiveSessions(userId);
+        if (asessions<5) {
+            createUsrSessionByUserId(userId);
+        }
+        userDAO.updateActiveSessions(userId);
         List<UsrSession> usrSessions = new ArrayList<UsrSession>();
         try {
             PreparedStatement pStatement = _connection.prepareStatement(

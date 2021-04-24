@@ -29,6 +29,27 @@ public class UserDAO {
     }
 
 
+    public int updateActiveSessions(int userId) {
+        UsrSessionDAO usrSessionDAO = new UsrSessionDAO(this._connection);
+        int asessions = usrSessionDAO.getActiveSessionsCountByUserId(userId);
+        PreparedStatement pStatement;
+        try {
+            pStatement = _connection.prepareStatement(
+                // "SELECT password = crypt(?,password), id, username, email, admin, activesessions FROM users WHERE username = ?;"
+                "UPDATE users SET activesessions = ? WHERE id=?"
+            );
+            pStatement.setInt(1,asessions);
+            pStatement.setInt(2,userId);
+            pStatement.executeUpdate();
+        } catch (SQLException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
+        return asessions;
+    }
+
+
     public User getUserFromPassword(String username, String pw) {
 
         try {
@@ -44,11 +65,13 @@ public class UserDAO {
             ResultSet rSet = pStatement.executeQuery();
             System.out.println("getUser");
             
-            while(rSet.next()){
+            while(rSet.next()) {
                 if (rSet.getBoolean(1)) {
                     System.out.println("main password matched");
                     // Matched perm password
-                    User usr = new User(rSet.getInt(_id), rSet.getString(_un), rSet.getString(_email), rSet.getBoolean(_admin), rSet.getInt(_as), null);
+                    int userId = rSet.getInt(_id);
+                    int asessions = updateActiveSessions(userId);
+                    User usr = new User(userId, rSet.getString(_un), rSet.getString(_email), rSet.getBoolean(_admin), asessions, null);
 
                     // clear tmppassword, tmpexpire
                     pStatement = _connection.prepareStatement(
@@ -62,7 +85,9 @@ public class UserDAO {
                 } else if (rSet.getBoolean(2)) {
                     System.out.println("temp password matched");
                     // Matched temporary password...
-                    User usr = new User(rSet.getInt(_id), rSet.getString(_un), rSet.getString(_email), rSet.getBoolean(_admin), rSet.getInt(_as), rSet.getTimestamp(_tmpexpire));
+                    int userId = rSet.getInt(_id);
+                    int asessions = updateActiveSessions(userId);
+                    User usr = new User(userId, rSet.getString(_un), rSet.getString(_email), rSet.getBoolean(_admin), asessions, rSet.getTimestamp(_tmpexpire));
 
                     // clear tmppassword, tmpexpire
                     pStatement = _connection.prepareStatement(

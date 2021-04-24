@@ -19,7 +19,7 @@ public class ApiServlet extends HttpServlet {
 
     final Logger logger = LogManager.getLogger(ApiServlet.class);
 
-    private String apiId = "#maincontent";
+    private String apiId = "#apicontent";
     private String apiHtml = "" +
         "<div>" +
         "API CONTENT" +
@@ -27,7 +27,8 @@ public class ApiServlet extends HttpServlet {
     private String apiSrc = "api.js";
     private String apiCmpntId = "mainComponent";
 
-    protected void service(HttpServletRequest req, HttpServletResponse res) 
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse res) 
         throws ServletException, IOException
     {
         HttpSession session = req.getSession();

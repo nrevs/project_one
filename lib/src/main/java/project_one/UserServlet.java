@@ -35,23 +35,37 @@ public class UserServlet extends HttpServlet {
     private String userIdTag = "#maincontent";
     private String userHtml = "" +
         "<div>" +
-            "<h2>Welcome {USERNAME}</h3></br></br>" +
+            "<div>" +
+                "<h2>Welcome {USERNAME}</h3></br></br>" +
+                "<button id=\"newSessionButton\" type=\"button\" onclick=\"getNewSession(event)\">new session</button>" +
+                "<button id=\"userLogoutButton\" type=\"button\" onclick=\"logoutUser(event)\" >logout</button></br>" +
                 "<h3>Your active sessions:</h3></br>" +
-                    "<div id='userSessions'>" +
-                        "<table id=sessionsTable>" +
+                "<form id=\"sessionsForm\" method=\"get\"></br>" +
+                    "<table id=sessionsTable>" +
+                        "<thead>" +
                             "<tr>" +
                                 "<th>SessionID</th>" +
                                 "<th>Expiration</th>" +
                                 "<th>Req Count</th>" +
+                                "<th>Select</th>" +
                             "</tr>" +
-                        "</table>" +
-                    "</div>" +
-                "<button type=\"button\" onclick=\"getNewSession(event)\">new session</button></br>" +
-            "<button id=\"userLogoutButton\" type=\"button\" onclick=\"logoutUser(event)\" >logout</button></br>" +
+                        "</thead>" +
+                        "<tbody id=sessionsTableBody>" +
+                        "</tbody>" +
+                    "</table>" +
+                "</form>" +
+                "<label for=\"tickers\">Choose a Ticker:</label>" +
+                "<select id=\"tickers\" name=\"tickerslist\" form=\"sessionsForm\">" +
+                "</select></br></br>" + 
+                "<button type=\"button\" onclick=\"getApiData(event)\">GET DATA</button>" +
+            "</div>" + 
+            "<div id=\"apicontent\">" +
+            "</div>" +
         "</div>";
     private String userSrc = "user.js";
     private String userCmpntId = "mainComponent";
     private String userData = "";
+    private String tickersData = "";
 
     @Override
     protected void service(HttpServletRequest req, HttpServletResponse res)
@@ -75,18 +89,36 @@ public class UserServlet extends HttpServlet {
             JSONArray jsonArray = new JSONArray();
             jsonArray.addAll(usrSessions);
             
-            JSONObject jsonObj = new JSONObject();
-            jsonObj.put("sessions",jsonArray);
-            userData = jsonObj.toJSONString();
+            JSONObject jsonUsrData = new JSONObject();
+            jsonUsrData.put("sessions",jsonArray);
+            userData = jsonUsrData.toJSONString();
 
             Payload payload1 = new Payload(userIdTag, userHtml, userSrc, "empty");
             Component mainComponent = new Component(userCmpntId, payload1);
-            Payload payload2 = new Payload("#userSessions","empty","empty",userData);
+
+            // seshComponent
+            Payload payload2 = new Payload("#sessionsTableBody","empty","empty",userData);
             Component seshComponent = new Component("seshComponent", payload2);
+
+            TickerDataDAO tickerDataDAO = new TickerDataDAO(connection);
+            
+            JSONArray tickersArray = tickerDataDAO.getTickersArray();
+            
+            JSONObject jsonTickerData = new JSONObject();
+            jsonTickerData.put("tickers", tickersArray);
+            tickersData = jsonTickerData.toJSONString();
+            System.out.println(tickersData);
+            
+            // tickerComponent
+            Payload payload3 = new Payload("#tickers","empty", "empty", tickersData);
+            Component tickersComponent = new Component("tickersComponent", payload3);
+            
             ArrayList<Component> cmps = new ArrayList<Component>();
             cmps.add(mainComponent);
             cmps.add(seshComponent);
+            cmps.add(tickersComponent);
             String rString = rb.buildResponseString(cmps);
+            System.out.println("UserServlet rString: "+rString);
 
             res.setContentType("application/json");
             res.getWriter().println(rString);
