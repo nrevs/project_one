@@ -32,7 +32,7 @@ public class UsrSessionDAO {
         int count = 11;
         try {
             PreparedStatement pStatement = _connection.prepareStatement(
-                "SELECT reqcount FROM activesessions WHERE sessionid=?);"
+                "SELECT reqcount FROM activesessions WHERE sessionid=?;"
             );
             UUID uuid = UUID.fromString(sessionId);
             pStatement.setObject(1, uuid);
@@ -49,7 +49,7 @@ public class UsrSessionDAO {
     public void incrementRequestCount(String sessionId) {
         try {
             PreparedStatement pStatement = _connection.prepareStatement(
-                "UPDATE activesessions SET reqcount = reqcount + 1 WHERE sessionid=?);"
+                "UPDATE activesessions SET reqcount = reqcount + 1 WHERE sessionid=?;"
             );
             UUID uuid = UUID.fromString(sessionId);
             pStatement.setObject(1, uuid);

@@ -34,11 +34,10 @@ public class ApiServlet extends HttpServlet {
     private String apiHtml = "" +
         "<div>" +
             "<h4 id=\"tickertitle\"></h4></br>" +
-            "<lu id=\"histdatalist\">" +
-            "<lu>" +
+            "<ul id=\"histdatalist\" style=\"list-style: none;\"></ul>" +
         "</div>";
-    private String apiSrc = "";
-    private String apiCmpntId = "mainComponent";
+    private String apiSrc = "empty";
+    private String apiCmpntId = "histDataComponent";
     private String userData = "";
 
     @Override
@@ -46,7 +45,7 @@ public class ApiServlet extends HttpServlet {
         throws ServletException, IOException
     {
         HttpSession session = req.getSession();
-
+        System.out.println("ApiServlet doGet called");
         String code = req.getParameter("code");
         String sessionId = req.getParameter("sessionid");
         String username = req.getParameter("username");
@@ -54,7 +53,7 @@ public class ApiServlet extends HttpServlet {
 
         String histData;
         try {
-            // connectino and DAOs setup
+            // connection and DAOs setup
             Connection connection = DriverManager.getConnection(url, uname, pwDB);
             UsrSessionDAO usrSeshDAO = new UsrSessionDAO(connection);
             TickerDataDAO tickerDataDAO = new TickerDataDAO(connection);
@@ -63,6 +62,10 @@ public class ApiServlet extends HttpServlet {
             usrSeshDAO.incrementRequestCount(sessionId);
             int reqCount = usrSeshDAO.getRequestCountBySessionId(sessionId);
             if(reqCount<10) {
+                // mainComponent
+                Payload payloadMain = new Payload(apiId, apiHtml, "empty", "empty");
+                Component mainComponent = new Component("mainComponent", payloadMain);
+
                 // histDataComponent
                 JSONArray tickerDataArray = tickerDataDAO.getTickersDataByTicker(ticker);
                 JSONObject jsonTickerData = new JSONObject();
@@ -71,8 +74,8 @@ public class ApiServlet extends HttpServlet {
                 
                 histData = jsonTickerData.toJSONString();
 
-                Payload payloadHistData = new Payload("","","","");
-                Component histDataComponent = new Component("histDataComponent", payloadHistData);
+                Payload payloadHistData = new Payload("#histdatalist","empty","empty", histData);
+                Component histDataComponent = new Component(apiCmpntId, payloadHistData);
 
                 // seshComponent
                 ArrayList<UsrSession> usrSessions;
@@ -91,10 +94,11 @@ public class ApiServlet extends HttpServlet {
 
                 // build response
                 ArrayList<Component> cmps = new ArrayList<Component>();
+                cmps.add(mainComponent);
                 cmps.add(histDataComponent);
                 cmps.add(seshComponent);
                 String rString = rb.buildResponseString(cmps);
-                System.out.println("UserServlet rString: "+rString);
+                System.out.println("ApiServlet rString: "+rString);
 
                 res.setContentType("application/json");
                 res.getWriter().println(rString);
@@ -102,15 +106,6 @@ public class ApiServlet extends HttpServlet {
         } catch(SQLException sqlE) {
             sqlE.printStackTrace();
         }
-        
-        apiHtml = apiHtml.replaceAll("\\{CODE\\}",code);
-        apiHtml = apiHtml.replaceAll("\\{SESSIONID\\}",sessionId);
-        apiHtml = apiHtml.replaceAll("\\{USERNAME\\}",username);
-        apiHtml = apiHtml.replaceAll("\\{TICKER\\}",ticker);
-        String rString = rb.buildResponseString(apiCmpntId, apiId, apiHtml, apiSrc);
-
-        res.setContentType("application/json");
-        res.getWriter().println(rString);
     }
 
 }

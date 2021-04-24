@@ -150,7 +150,28 @@ public class TickerDataDAO {
 
     public JSONArray getTickersDataByTicker(String ticker) {
         JSONArray jsonArray = new JSONArray();
+        String queryString = "SELECT date, high, low, open, close, sharevolume, totaltrades FROM {TICKER};";
+        
+        queryString = queryString.replaceAll("\\{TICKER\\}",ticker);
+        System.out.println("queryString: "+queryString);
+        try {
+            PreparedStatement pStatement = _connection.prepareStatement(queryString);
+            ResultSet rSet = pStatement.executeQuery();
+            while(rSet.next()) {
+                JSONObject jsonObj = new JSONObject();
+                jsonObj.put("date",rSet.getDate("date"));
+                jsonObj.put("high",rSet.getFloat("high"));
+                jsonObj.put("low",rSet.getFloat("low"));
+                jsonObj.put("open",rSet.getFloat("open"));
+                jsonObj.put("close",rSet.getFloat("close"));
+                jsonObj.put("sharevolume",rSet.getInt("sharevolume"));
+                jsonObj.put("totaltrades",rSet.getInt("totaltrades"));
+                jsonArray.add(jsonObj);
+            }
 
+        } catch(SQLException sqlE) {
+            sqlE.printStackTrace();
+        }
         return jsonArray;
     }
 
