@@ -35,8 +35,8 @@ import org.apache.logging.log4j.Logger;
     fileSizeThreshold = 1024,
     maxFileSize = 1024,
     maxRequestSize = 1024)
-public class PrimaryServlet extends HttpServlet{
-    final Logger logger = LogManager.getLogger(PrimaryServlet.class);
+public class LoginServlet extends HttpServlet{
+    final Logger logger = LogManager.getLogger(LoginServlet.class);
     
     /**
      *

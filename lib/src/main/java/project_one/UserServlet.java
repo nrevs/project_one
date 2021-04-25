@@ -40,7 +40,7 @@ public class UserServlet extends HttpServlet {
                 "<button id=\"userLogoutButton\" type=\"button\" onclick=\"logoutUser(event)\" >logout</button></br>" +
                 "<h3>Your active sessions:</h3></br>" +
                 "<form id=\"sessionsForm\" method=\"get\"></br>" +
-                    "<table id=sessionsTable>" +
+                    "<table id=sessionsTable class=\"table table-bordered table-striped\">" +
                         "<thead>" +
                             "<tr>" +
                                 "<th>SessionID</th>" +
